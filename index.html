@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f7fb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="我的账本">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>我的账本</title>
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div><p class="eyebrow" id="todayLabel">YOUR MONEY, CLEARLY</p><h1>我的账本</h1></div>
+    <button class="icon-button" id="settingsBtn" aria-label="设置">⚙</button>
+  </header>
+
+  <section class="hero-card">
+    <div class="hero-head"><span id="monthLabel">本月概览</span><span class="privacy-pill">● 私密本地账本</span></div>
+    <p class="muted light">本月结余</p>
+    <div class="balance" id="monthBalance">¥0.00</div>
+    <div class="summary-row">
+      <div><span class="summary-label">收入</span><strong class="income" id="monthIncome">¥0.00</strong></div>
+      <div><span class="summary-label">支出</span><strong class="expense" id="monthExpense">¥0.00</strong></div>
+    </div>
+    <div class="budget-track"><div id="budgetBar"></div></div>
+    <div class="budget-caption"><span id="budgetText">尚未设置本月预算</span><button class="text-button light" data-page="budget">设置预算 ›</button></div>
+  </section>
+
+  <nav class="tabs" aria-label="主要页面">
+    <button class="tab active" data-page="home">概览</button>
+    <button class="tab" data-page="records">明细</button>
+    <button class="tab" data-page="stats">统计</button>
+    <button class="tab" data-page="accounts">账户</button>
+    <button class="tab" data-page="loans">借还</button>
+  </nav>
+
+  <main>
+    <section class="page active" id="page-home">
+      <div class="section-title"><h2>记一笔</h2><span class="muted small">简单记下每一笔</span></div>
+      <div class="type-switch">
+        <button class="type-btn active" data-type="expense">支出</button>
+        <button class="type-btn" data-type="income">收入</button>
+        <button class="type-btn" data-type="transfer">转账</button>
+      </div>
+      <form id="recordForm" class="panel form-panel">
+        <label class="amount-label" for="amount">金额（¥）</label>
+        <input id="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required>
+        <div class="form-grid">
+          <label>分类<select id="category"></select></label>
+          <label>账户<select id="account"></select></label>
+          <label>日期<input id="recordDate" type="date" required></label>
+          <label>备注<input id="note" maxlength="100" placeholder="选填，例如：午餐"></label>
+        </div>
+        <div id="transferFields" class="form-grid hidden">
+          <label>转入账户<select id="toAccount"></select></label>
+        </div>
+        <button class="primary-btn" type="submit" id="saveRecord">保存账单</button>
+        <p class="form-hint" id="formHint">账单只保存在当前浏览器，不会上传服务器。</p>
+      </form>
+
+      <div class="section-title space-top"><h2>最近账单</h2><button class="text-button" data-page="records">查看全部 ›</button></div>
+      <div id="recentRecords" class="record-list"></div>
+    </section>
+
+    <section class="page" id="page-records">
+      <div class="section-title"><h2>账单明细</h2></div>
+      <div class="panel filters">
+        <input id="searchRecords" placeholder="搜索备注或分类">
+        <div class="filter-row">
+          <input id="filterMonth" type="month" aria-label="选择月份">
+          <select id="filterType"><option value="all">全部类型</option><option value="expense">支出</option><option value="income">收入</option><option value="transfer">转账</option></select>
+        </div>
+      </div>
+      <div id="allRecords" class="record-list"></div>
+      <div class="panel export-panel">
+        <div><strong>导出你的数据</strong><p class="muted small">CSV 可用 Excel/WPS 打开；JSON 可用于完整备份与恢复。</p></div>
+        <div class="button-row"><button class="secondary-btn" id="exportCsv">导出 CSV</button><button class="secondary-btn" id="exportJson">备份 JSON</button></div>
+        <label class="secondary-btn import-btn">恢复 JSON 备份<input id="importJson" type="file" accept=".json,application/json" hidden></label>
+      </div>
+    </section>
+
+    <section class="page" id="page-stats">
+      <div class="section-title"><h2>月度统计</h2><input id="statsMonth" type="month" aria-label="统计月份"></div>
+      <div class="stats-grid">
+        <div class="stat-card"><span>总收入</span><strong class="income" id="statsIncome">¥0.00</strong></div>
+        <div class="stat-card"><span>总支出</span><strong class="expense" id="statsExpense">¥0.00</strong></div>
+        <div class="stat-card"><span>结余</span><strong id="statsBalance">¥0.00</strong></div>
+        <div class="stat-card"><span>记账笔数</span><strong id="statsCount">0</strong></div>
+      </div>
+      <div class="panel"><div class="section-title"><h3>支出分类</h3></div><div id="categoryStats" class="category-stats"></div></div>
+      <div class="panel"><div class="section-title"><h3>每日支出</h3></div><div id="dailyStats" class="daily-stats"></div></div>
+    </section>
+
+    <section class="page" id="page-budget">
+      <div class="section-title"><h2>预算管理</h2></div>
+      <div class="panel">
+        <p class="muted">设置每月支出上限，概览页会显示预算使用情况。</p>
+        <form id="budgetForm">
+          <label>每月预算（¥）<input id="budgetAmount" type="number" min="0" step="0.01" placeholder="例如 3000.00" required></label>
+          <button class="primary-btn" type="submit">保存预算</button>
+        </form>
+        <div class="budget-detail"><span>本月已支出</span><strong id="budgetSpent">¥0.00</strong></div>
+        <div class="budget-detail"><span>预算剩余</span><strong id="budgetRemaining">—</strong></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-accounts">
+      <div class="section-title"><h2>账户管理</h2></div>
+      <div class="panel">
+        <p class="muted small">账户余额根据初始余额与已记录账单自动估算。转账不会计入收入或支出。</p>
+        <form id="accountForm" class="inline-form">
+          <input id="newAccountName" placeholder="账户名称，如银行卡" maxlength="24" required>
+          <input id="newAccountBalance" type="number" step="0.01" placeholder="初始余额" value="0" required>
+          <button class="primary-btn" type="submit">添加</button>
+        </form>
+      </div>
+      <div id="accountList" class="account-list"></div>
+    </section>
+
+    <section class="page" id="page-loans">
+      <div class="section-title"><h2>借款与还款</h2></div>
+      <div class="panel">
+        <p class="muted small">记录借出/借入以及归还。此处是独立的往来记录，不会自动改变日常收支；实际收到或付出现金时，请另记一笔收支。</p>
+        <form id="loanForm" class="form-grid">
+          <label>类型<select id="loanType"><option value="lent">借给别人</option><option value="borrowed">向别人借</option></select></label>
+          <label>姓名/对象<input id="loanPerson" maxlength="40" placeholder="例如：朋友" required></label>
+          <label>金额（¥）<input id="loanAmount" type="number" min="0.01" step="0.01" required></label>
+          <label>日期<input id="loanDate" type="date" required></label>
+          <label class="full-width">备注<input id="loanNote" maxlength="100" placeholder="可不填"></label>
+          <button class="primary-btn full-width" type="submit">添加借还记录</button>
+        </form>
+      </div>
+      <div id="loanList" class="record-list"></div>
+    </section>
+
+    <section class="page" id="page-settings">
+      <div class="section-title"><h2>设置与数据</h2></div>
+      <div class="panel">
+        <h3>数据存储说明</h3>
+        <p class="muted">数据保存在这台设备、这个浏览器的网站存储中。清除网站数据、换浏览器或更换手机都可能导致数据无法访问，请定期导出 JSON 备份。</p>
+        <button class="secondary-btn" id="settingsExport">立即备份 JSON</button>
+      </div>
+      <div class="panel danger-panel">
+        <h3>清空账本</h3><p class="muted">此操作会删除本机保存的全部账单、账户、预算和借还记录，无法撤销。请先备份。</p>
+        <button class="danger-btn" id="clearAll">清空全部数据</button>
+      </div>
+    </section>
+  </main>
+  <footer>我的账本 · 轻量、私密、好上手</footer>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<script src="app.js"></script>
+</body>
+</html>
