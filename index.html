@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="我的账本">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 <title>我的账本</title>
 </head>
 <body>
@@ -191,11 +191,11 @@
 
     <section class="page" id="page-settings">
       <div class="section-title"><h2>设置与数据</h2></div>
-      
-      <!-- 主题颜色（扩充至10个） -->
+
+      <!-- 主题颜色 -->
       <div class="panel">
         <h3>主题颜色</h3>
-        <p class="muted small">选择你喜欢的页面主色调。</p>
+        <p class="muted small">选择喜欢的页面主色调，或用下方 360° 色盘自定义任意颜色。</p>
         <div class="theme-colors" id="themeColors">
           <button type="button" data-color="blue" class="theme-btn active" style="background:#3b6fdc"></button>
           <button type="button" data-color="green" class="theme-btn" style="background:#10b981"></button>
@@ -208,24 +208,27 @@
           <button type="button" data-color="amber" class="theme-btn" style="background:#f59e0b"></button>
           <button type="button" data-color="dark" class="theme-btn" style="background:#334155"></button>
         </div>
+        <label class="color-picker">
+          <span>🎨 360° 自定义主题色</span>
+          <span class="color-wheel-wrap">
+            <span class="color-wheel"></span>
+            <span class="color-wheel-center" id="themeWheelCenter"></span>
+            <input type="color" id="customThemePicker" value="#4a7ce0" aria-label="自定义主题色">
+          </span>
+        </label>
       </div>
 
       <!-- 字体样式 -->
       <div class="panel">
         <h3>字体样式</h3>
-        <p class="muted small">改变整个页面的字体风格。</p>
-        <select id="fontFamilySelect" style="margin-top:10px;">
-          <option value="default">系统默认 (清爽黑体)</option>
-          <option value="round">圆润幼圆 (可爱风)</option>
-          <option value="serif">优雅衬线 (宋体/阅读风)</option>
-          <option value="mono">数字等宽 (极客风)</option>
-        </select>
+        <p class="muted small">改变整个页面的字体风格（共 24 种）。</p>
+        <select id="fontFamilySelect" style="margin-top:10px;"></select>
       </div>
 
       <!-- 字体颜色 -->
       <div class="panel">
         <h3>字体颜色</h3>
-        <p class="muted small">改变页面主要文字的颜色。</p>
+        <p class="muted small">改变页面主要文字颜色，或用 360° 色盘自定义。</p>
         <div class="text-colors" id="textColors">
           <button type="button" data-text="default" class="theme-btn active" style="background:#1d2738"></button>
           <button type="button" data-text="black" class="theme-btn" style="background:#000000"></button>
@@ -233,6 +236,14 @@
           <button type="button" data-text="brown" class="theme-btn" style="background:#5c4033"></button>
           <button type="button" data-text="blue" class="theme-btn" style="background:#1e3a8a"></button>
         </div>
+        <label class="color-picker">
+          <span>🎨 360° 自定义文字颜色</span>
+          <span class="color-wheel-wrap">
+            <span class="color-wheel"></span>
+            <span class="color-wheel-center" id="textWheelCenter"></span>
+            <input type="color" id="customTextPicker" value="#1d2738" aria-label="自定义文字颜色">
+          </span>
+        </label>
       </div>
 
       <div class="panel">
@@ -318,7 +329,28 @@
   </div>
 </div>
 
+<dialog id="quickDialog" class="app-dialog">
+  <form method="dialog" id="quickForm">
+    <h3 id="quickTitle">快捷还款</h3>
+    <input type="hidden" id="quickMode">
+    <input type="hidden" id="quickId">
+    <div class="form-grid">
+      <label>本次金额（¥）<input type="number" id="quickAmount" step="0.01" min="0.01" required></label>
+      <label>日期<input type="date" id="quickDate" required></label>
+    </div>
+    <div class="quick-amounts" id="quickAmounts"></div>
+    <label class="checkbox-label full-width" style="margin-top:14px">
+      <input type="checkbox" id="quickAutoRecord">
+      <span id="quickAutoLabel">同时记一笔账单</span>
+    </label>
+    <div class="dialog-actions">
+      <button type="button" class="secondary-btn" onclick="document.getElementById('quickDialog').close()">取消</button>
+      <button type="submit" class="primary-btn" style="margin-top:0">确认</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="toast" class="toast" role="status"></div>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@ const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.
 const monthNow = () => today().slice(0,7);
 const money = n => "¥" + Number(n||0).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
 const safe = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
 
 const defaultState = () => ({
   records:[], loans:[], activities:[], budget:{}, recurring:[],
@@ -17,7 +18,7 @@ const defaultState = () => ({
     expense: ["餐饮","交通","购物","居家","住房","医疗","娱乐","学习","人情","旅行","通讯","其他"].map(n=>({name:n, icon:getDefaultIcon(n)})),
     income: ["工资","奖金","兼职","投资收益","红包","退款","其他收入"].map(n=>({name:n, icon:getDefaultIcon(n)}))
   },
-  settings: { pin: "", themeColor: "blue", fontFamily: "default", fontColor: "default" }
+  settings: { pin: "", themeColor: "blue", fontFamily: "default", fontColor: "default", customTheme: "#4a7ce0", customText: "#1d2738" }
 });
 
 function getDefaultIcon(name) {
@@ -38,20 +39,116 @@ if (!state.settings) state.settings = { pin: "" };
 if (!state.settings.themeColor) state.settings.themeColor = "blue";
 if (!state.settings.fontFamily) state.settings.fontFamily = "default";
 if (!state.settings.fontColor) state.settings.fontColor = "default";
+if (!state.settings.customTheme) state.settings.customTheme = "#4a7ce0";
+if (!state.settings.customText) state.settings.customText = "#1d2738";
 
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.querySelectorAll('#themeColors .theme-btn').forEach(b => b.classList.toggle('active', b.dataset.color === theme));
+/* ===== 字体库：24 种 ===== */
+const FONTS = [
+  { id: "default",   name: "系统默认（清爽黑体）",       stack: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif' },
+  { id: "round",     name: "圆润幼圆（可爱风）",         stack: '"Yuanti SC", "YouYuan", "Quicksand", "PingFang SC", sans-serif' },
+  { id: "serif",     name: "优雅衬线（宋体/阅读风）",     stack: '"Songti SC", "SimSun", Georgia, serif' },
+  { id: "mono",      name: "数字等宽（极客风）",         stack: '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace' },
+  { id: "kaiti",     name: "楷体（书写风）",             stack: '"Kaiti SC", "KaiTi", "STKaiti", "楷体", serif' },
+  { id: "fangsong",  name: "仿宋（公文风）",             stack: '"FangSong", "STFangsong", "仿宋", serif' },
+  { id: "heiti",     name: "黑体（醒目风）",             stack: '"Heiti SC", "SimHei", "黑体", sans-serif' },
+  { id: "yahei",     name: "微软雅黑",                   stack: '"Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif' },
+  { id: "pingfang",  name: "苹方（现代 iOS）",           stack: '"PingFang SC", "苹方-简", "Helvetica Neue", sans-serif' },
+  { id: "hiragino",  name: "冬青黑体",                   stack: '"Hiragino Sans GB", "冬青黑体简体中文", sans-serif' },
+  { id: "dengxian",  name: "等线（清爽细体）",           stack: '"DengXian", "等线", "Microsoft YaHei", sans-serif' },
+  { id: "lanting",   name: "兰亭黑",                     stack: '"Lantinghei SC", "兰亭黑", sans-serif' },
+  { id: "xingkai",   name: "华文行楷（书法风）",         stack: '"STXingkai", "Xingkai SC", "华文行楷", "KaiTi", serif' },
+  { id: "lishu",     name: "华文隶书",                   stack: '"STLiti", "LiSu", "华文隶书", serif' },
+  { id: "helvetica", name: "Helvetica（经典无衬线）",    stack: 'Helvetica, "Helvetica Neue", Arial, sans-serif' },
+  { id: "arial",     name: "Arial",                      stack: 'Arial, Helvetica, sans-serif' },
+  { id: "verdana",   name: "Verdana（易读）",            stack: 'Verdana, Geneva, sans-serif' },
+  { id: "georgia",   name: "Georgia（英文衬线）",        stack: 'Georgia, "Times New Roman", serif' },
+  { id: "times",     name: "Times New Roman",            stack: '"Times New Roman", Times, serif' },
+  { id: "trebuchet", name: "Trebuchet MS",               stack: '"Trebuchet MS", Tahoma, sans-serif' },
+  { id: "courier",   name: "Courier New（打字机）",      stack: '"Courier New", Courier, monospace' },
+  { id: "impact",    name: "Impact（粗标题）",           stack: 'Impact, "Arial Black", sans-serif' },
+  { id: "comic",     name: "Comic Sans MS",              stack: '"Comic Sans MS", "Chalkboard SE", cursive' },
+  { id: "cursive",   name: "手写体",                     stack: '"Bradley Hand", "Segoe Print", "Comic Sans MS", cursive' }
+];
+
+const PRESET_THEME_HEX = { blue: "#4a7ce0", green: "#10b981", purple: "#8b5cf6", orange: "#f97316", pink: "#ec4899", red: "#ef4444", teal: "#14b8a6", indigo: "#6366f1", amber: "#f59e0b", dark: "#334155" };
+const INK_MAP = { default: "#1d2738", black: "#000000", gray: "#4b5563", brown: "#5c4033", blue: "#1e3a8a" };
+const clampPct = v => Math.max(6, Math.min(92, v));
+const isHex = h => /^#[0-9a-f]{6}$/i.test(h || "");
+
+function hexToHsl(hex) {
+  let r = 0, g = 0, b = 0;
+  const h6 = String(hex || "").replace("#", "");
+  if (h6.length === 3) { r = parseInt(h6[0]+h6[0],16); g = parseInt(h6[1]+h6[1],16); b = parseInt(h6[2]+h6[2],16); }
+  else if (h6.length === 6) { r = parseInt(h6.slice(0,2),16); g = parseInt(h6.slice(2,4),16); b = parseInt(h6.slice(4,6),16); }
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h *= 60;
+  }
+  return { h: Math.round(h), s: Math.round(s*100), l: Math.round(l*100) };
+}
+
+function initFontSelect() {
+  const sel = $("fontFamilySelect");
+  if (!sel) return;
+  sel.innerHTML = FONTS.map(f => `<option value="${f.id}">${f.name}</option>`).join("");
+  sel.value = state.settings.fontFamily || "default";
+}
+
+function applyTheme(theme, customHex) {
+  const root = document.documentElement;
+  const custom = theme === "custom" && isHex(customHex);
+  const effective = (theme === "custom" && !custom) ? "blue" : theme;
+  if (custom) {
+    const c = hexToHsl(customHex);
+    root.removeAttribute("data-theme");
+    root.style.setProperty("--c-primary", `hsl(${c.h}, ${c.s}%, ${c.l}%)`);
+    root.style.setProperty("--c-hero",
+      `linear-gradient(135deg, hsl(${c.h},${c.s}%,${clampPct(c.l-16)}%) 0%, hsl(${c.h},${c.s}%,${c.l}%) 50%, hsl(${c.h},${c.s}%,${clampPct(c.l+14)}%) 100%)`);
+    root.style.setProperty("--c-btn",
+      `linear-gradient(110deg, hsl(${c.h},${c.s}%,${clampPct(c.l-8)}%), hsl(${c.h},${c.s}%,${clampPct(c.l+10)}%))`);
+  } else {
+    root.style.removeProperty("--c-primary");
+    root.style.removeProperty("--c-hero");
+    root.style.removeProperty("--c-btn");
+    root.setAttribute("data-theme", effective || "blue");
+  }
+  document.querySelectorAll("#themeColors .theme-btn").forEach(b =>
+    b.classList.toggle("active", !custom && b.dataset.color === effective));
+  const picker = $("customThemePicker");
+  if (picker) picker.value = isHex(customHex) ? customHex : (PRESET_THEME_HEX[effective] || "#4a7ce0");
+  const center = $("themeWheelCenter");
+  if (center) center.style.background = custom ? customHex : (PRESET_THEME_HEX[effective] || "#4a7ce0");
 }
 
 function applyFont(family) {
-  document.documentElement.setAttribute('data-font', family);
-  if ($("fontFamilySelect")) $("fontFamilySelect").value = family;
+  const f = FONTS.find(x => x.id === family) || FONTS[0];
+  document.documentElement.style.setProperty("--font", f.stack);
+  const sel = $("fontFamilySelect");
+  if (sel) sel.value = f.id;
 }
 
-function applyFontColor(color) {
-  document.documentElement.setAttribute('data-text', color);
-  document.querySelectorAll('#textColors .theme-btn').forEach(b => b.classList.toggle('active', b.dataset.text === color));
+function applyFontColor(color, customHex) {
+  const root = document.documentElement;
+  const custom = color === "custom" && isHex(customHex);
+  const effective = (color === "custom" && !custom) ? "default" : color;
+  const hex = custom ? customHex : (INK_MAP[effective] || INK_MAP.default);
+  root.style.setProperty("--ink", hex);
+  root.removeAttribute("data-text");
+  document.querySelectorAll("#textColors .theme-btn").forEach(b =>
+    b.classList.toggle("active", !custom && b.dataset.text === effective));
+  const picker = $("customTextPicker");
+  if (picker) picker.value = hex;
+  const center = $("textWheelCenter");
+  if (center) center.style.background = hex;
 }
 
 function backupState() { try { localStorage.setItem(KEY + "_backup", localStorage.getItem(KEY) || ""); } catch(e){} }
@@ -215,12 +312,27 @@ function renderActivityCalc() {
 }
 
 function activityHtml(a) {
-  const total = Number(a.total)||0, people = Number(a.people)||0, extra = Number(a.extra)||0;
-  const per = people>0 ? total/people : 0, due = total + extra, perWithExtra = people>0 ? due/people : 0;
+  const total = Number(a.total) || 0, people = Number(a.people) || 0, extra = Number(a.extra) || 0;
+  const per = people > 0 ? total / people : 0, due = total + extra;
+  const received = Number(a.received) || 0;
+  const remain = Math.max(0, due - received);
+  const settled = remain <= 0.001;
+  const history = (a.history || []).slice(-3);
   return `<article class="record-item">
     <div class="record-icon icon-activity">🎯</div>
-    <div class="record-main"><div class="record-name">${safe(a.name)}</div><div class="record-meta">${safe(a.date)} · ${people} 人 · 每人 ${money(per)} · 额外收 ${money(extra)}<br>应收合计 ${money(due)} · 含额外人均 ${money(perWithExtra)}${a.note?` · ${safe(a.note)}`:""}</div></div>
-    <div class="record-right"><div class="record-amount">${money(total)}</div><div class="record-actions"><button class="mini-action delete" data-activity-delete="${safe(a.id)}">删除</button></div></div>
+    <div class="record-main">
+      <div class="record-name">${safe(a.name)}${settled ? ' <span class="tag-done">已收齐</span>' : ''}</div>
+      <div class="record-meta">${safe(a.date)} · ${people} 人 · 每人 ${money(per)} · 额外收 ${money(extra)}<br>
+        应收 ${money(due)} · 已收 ${money(received)} · 未收 ${money(remain)}${a.note ? ' · ' + safe(a.note) : ''}</div>
+      ${history.length ? `<div class="repay-history">${history.map(h => `<span>${safe(h.date)} ${money(h.amount)}</span>`).join('')}</div>` : ''}
+    </div>
+    <div class="record-right">
+      <div class="record-amount">${money(total)}</div>
+      <div class="record-actions">
+        ${settled ? '' : `<button class="mini-action primary" data-activity-receive="${safe(a.id)}">快捷收款</button>`}
+        <button class="mini-action delete" data-activity-delete="${safe(a.id)}">删除</button>
+      </div>
+    </div>
   </article>`;
 }
 
@@ -231,13 +343,106 @@ function renderActivities() {
 
 function renderLoans() {
   const rows = [...state.loans].sort((a,b)=>(b.date+b.created).localeCompare(a.date+a.created));
-  $("loanList").innerHTML = rows.length ? rows.map(l=>`
-    <article class="record-item">
-      <div class="record-icon icon-loan">${l.type==="lent"?"↗️":"↙️"}</div>
-      <div class="record-main"><div class="record-name">${l.type==="lent"?"借给":"向"} ${safe(l.person)}</div><div class="record-meta">${safe(l.date)}${l.note?" · "+safe(l.note):""}<br>已还 ${money(l.repaid||0)} · 剩余 ${money(Math.max(0, l.amount-(l.repaid||0)))}</div></div>
-      <div class="record-right"><div class="record-amount">${money(l.amount)}</div><div class="record-actions"><button class="mini-action" data-loan-repay="${safe(l.id)}">登记还款</button><button class="mini-action delete" data-loan-delete="${safe(l.id)}">删除</button></div></div>
-    </article>`).join("") : empty("还没有借款或还款记录");
+  $("loanList").innerHTML = rows.length ? rows.map(l => {
+    const remain = Math.max(0, Number(l.amount) - Number(l.repaid || 0));
+    const done = remain <= 0.001;
+    const history = (l.history || []).slice(-3);
+    return `<article class="record-item">
+      <div class="record-icon icon-loan">${l.type === "lent" ? "↗️" : "↙️"}</div>
+      <div class="record-main">
+        <div class="record-name">${l.type === "lent" ? "借给" : "向"} ${safe(l.person)}${done ? ' <span class="tag-done">已结清</span>' : ''}</div>
+        <div class="record-meta">${safe(l.date)}${l.note ? ' · ' + safe(l.note) : ''}<br>已还 ${money(l.repaid || 0)} · 剩余 ${money(remain)}</div>
+        ${history.length ? `<div class="repay-history">${history.map(h => `<span>${safe(h.date)} ${money(h.amount)}</span>`).join('')}</div>` : ''}
+      </div>
+      <div class="record-right">
+        <div class="record-amount">${money(l.amount)}</div>
+        <div class="record-actions">
+          ${done ? '' : `<button class="mini-action primary" data-loan-repay="${safe(l.id)}">快捷还款</button>`}
+          <button class="mini-action delete" data-loan-delete="${safe(l.id)}">删除</button>
+        </div>
+      </div>
+    </article>`;
+  }).join("") : empty("还没有借款或还款记录");
 }
+
+/* ===== 快捷还款 / 快捷收款 弹窗 ===== */
+function openQuickDialog(mode, id) {
+  $("quickMode").value = mode;
+  $("quickId").value = id;
+  $("quickDate").value = today();
+  if (mode === "loan") {
+    const l = state.loans.find(x => x.id === id); if (!l) return;
+    const remain = Math.max(0, Number(l.amount) - Number(l.repaid || 0));
+    $("quickTitle").textContent = l.type === "lent" ? `登记 ${l.person} 的还款` : `登记还给 ${l.person}`;
+    $("quickAmount").value = remain ? remain.toFixed(2) : "";
+    $("quickAutoRecord").checked = false;
+    $("quickAutoLabel").textContent = l.type === "lent" ? "同时记一笔收入（钱已收回）" : "同时记一笔支出（钱已还出）";
+    const chips = [];
+    if (remain > 0) {
+      chips.push(`<button type="button" class="quick-chip" data-amt="${remain.toFixed(2)}">全部结清 ${money(remain)}</button>`);
+      if (remain > 0.01) chips.push(`<button type="button" class="quick-chip" data-amt="${(remain/2).toFixed(2)}">还一半 ${money(remain/2)}</button>`);
+    }
+    $("quickAmounts").innerHTML = chips.join("");
+  } else {
+    const a = state.activities.find(x => x.id === id); if (!a) return;
+    const due = Number(a.total || 0) + Number(a.extra || 0);
+    const remain = Math.max(0, due - Number(a.received || 0));
+    $("quickTitle").textContent = `确认收款 · ${a.name}`;
+    $("quickAmount").value = remain ? remain.toFixed(2) : "";
+    $("quickAutoRecord").checked = true;
+    $("quickAutoLabel").textContent = "同时记一笔收入账单";
+    $("quickAmounts").innerHTML = remain > 0
+      ? `<button type="button" class="quick-chip" data-amt="${remain.toFixed(2)}">全部收齐 ${money(remain)}</button>` : "";
+  }
+  $("quickDialog").showModal();
+}
+
+$("quickAmounts").addEventListener("click", e => {
+  const chip = e.target.closest("[data-amt]");
+  if (chip) $("quickAmount").value = chip.dataset.amt;
+});
+
+$("quickForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const mode = $("quickMode").value, id = $("quickId").value;
+  const amt = Math.round(Number($("quickAmount").value) * 100) / 100;
+  const date = $("quickDate").value, auto = $("quickAutoRecord").checked;
+  if (!Number.isFinite(amt) || amt <= 0) return toast("请输入有效金额");
+  if (!date) return toast("请选择日期");
+
+  if (mode === "loan") {
+    const l = state.loans.find(x => x.id === id); if (!l) return;
+    const remain = Math.max(0, Number(l.amount) - Number(l.repaid || 0));
+    if (amt > remain + 0.001) return toast("金额超过剩余未还金额");
+    l.repaid = Math.round((Number(l.repaid || 0) + amt) * 100) / 100;
+    (l.history = l.history || []).push({ date, amount: amt, ts: Date.now() });
+    if (auto) {
+      const isLent = l.type === "lent";
+      state.records.push({
+        id: uid(), type: isLent ? "income" : "expense", amount: amt,
+        category: isLent ? "其他收入" : "其他", accountId: "cash", date,
+        note: `[快捷${isLent ? "收款" : "还款"}] ${l.person}`, created: Date.now()
+      });
+    }
+  } else {
+    const a = state.activities.find(x => x.id === id); if (!a) return;
+    const due = Number(a.total || 0) + Number(a.extra || 0);
+    const received = Number(a.received || 0);
+    if (amt > due - received + 0.001) return toast("金额超过未收金额");
+    a.received = Math.round((received + amt) * 100) / 100;
+    (a.history = a.history || []).push({ date, amount: amt, ts: Date.now() });
+    if (auto) {
+      state.records.push({
+        id: uid(), type: "income", amount: amt, category: "活动",
+        accountId: "wechat", date, note: `[快捷收款] ${a.name}`, created: Date.now()
+      });
+    }
+  }
+  save();
+  renderAll();
+  $("quickDialog").close();
+  toast("已记录");
+});
 
 function renderAll() {
   renderAccountsSelect(); renderCategories(); renderHome();
@@ -264,11 +469,11 @@ function exportExcel() {
   download(`我的账单-${today()}.xls`, html, "application/vnd.ms-excel;charset=utf-8");
 }
 function exportActivitiesCsv() {
-  const header = ["日期","活动名称","总金额","人数","每人AA","额外收取","应收合计","含额外人均","备注"];
+  const header = ["日期","活动名称","总金额","人数","每人AA","额外收取","应收合计","已收","未收","含额外人均","备注"];
   const rows = state.activities.map(a => {
     const total = Number(a.total)||0, people = Number(a.people)||0, extra = Number(a.extra)||0;
-    const per = people>0?total/people:0, due = total+extra, perWithExtra = people>0?due/people:0;
-    return [a.date,a.name,total,people,Math.round(per*100)/100,extra,Math.round(due*100)/100,Math.round(perWithExtra*100)/100,a.note||""];
+    const per = people>0?total/people:0, due = total+extra, received = Number(a.received)||0, remain = Math.max(0, due-received);
+    return [a.date,a.name,total,people,Math.round(per*100)/100,extra,Math.round(due*100)/100,Math.round(received*100)/100,Math.round(remain*100)/100,Math.round((people>0?due/people:0)*100)/100,a.note||""];
   });
   download(`我的活动-${today()}.csv`, [header,...rows].map(row=>row.map(v=>`"${String(v||"").replace(/"/g,'""')}"`).join(",")).join("\r\n"), "text/csv;charset=utf-8");
 }
@@ -320,8 +525,16 @@ document.addEventListener('touchend', e => {
 if($("themeColors")) {
   $("themeColors").addEventListener("click", e => {
     const btn = e.target.closest(".theme-btn");
-    if (btn) { state.settings.themeColor = btn.dataset.color; save(); applyTheme(btn.dataset.color); }
+    if (btn) { state.settings.themeColor = btn.dataset.color; save(); applyTheme(btn.dataset.color, state.settings.customTheme); }
   });
+}
+if($("customThemePicker")) {
+  $("customThemePicker").addEventListener("input", e => {
+    state.settings.themeColor = "custom";
+    state.settings.customTheme = e.target.value;
+    applyTheme("custom", e.target.value);
+  });
+  $("customThemePicker").addEventListener("change", () => save());
 }
 if($("fontFamilySelect")) {
   $("fontFamilySelect").addEventListener("change", e => {
@@ -331,8 +544,16 @@ if($("fontFamilySelect")) {
 if($("textColors")) {
   $("textColors").addEventListener("click", e => {
     const btn = e.target.closest(".theme-btn");
-    if (btn) { state.settings.fontColor = btn.dataset.text; save(); applyFontColor(btn.dataset.text); }
+    if (btn) { state.settings.fontColor = btn.dataset.text; save(); applyFontColor(btn.dataset.text, state.settings.customText); }
   });
+}
+if($("customTextPicker")) {
+  $("customTextPicker").addEventListener("input", e => {
+    state.settings.fontColor = "custom";
+    state.settings.customText = e.target.value;
+    applyFontColor("custom", e.target.value);
+  });
+  $("customTextPicker").addEventListener("change", () => save());
 }
 
 $("recordDate").value = today(); $("loanDate").value = today(); $("activityDate").value = today();
@@ -370,69 +591,4 @@ document.addEventListener("click", e => {
   const del = e.target.closest("[data-delete]"); if (del) { const r = state.records.find(x=>x.id===del.dataset.delete); if (r && confirm(`确定删除这笔 ${money(r.amount)} 吗？`)) { state.records = state.records.filter(x=>x.id!==r.id); save(); renderAll(); toast("已删除"); } return; }
   const edit = e.target.closest("[data-edit]"); if (edit) { openEditDialog(edit.dataset.edit); return; }
   const actDel = e.target.closest("[data-activity-delete]"); if (actDel) { const a = state.activities.find(x=>x.id===actDel.dataset.activityDelete); if (a && confirm(`确定删除活动“${a.name}”吗？`)) { state.activities = state.activities.filter(x=>x.id!==a.id); save(); renderActivities(); toast("已删除"); } return; }
-  const ld = e.target.closest("[data-loan-delete]"); if (ld) { if (confirm("确定删除这条借还记录吗？")) { state.loans = state.loans.filter(l=>l.id!==ld.dataset.loanDelete); save(); renderLoans(); toast("已删除"); } return; }
-  const repay = e.target.closest("[data-loan-repay]"); if (repay) { const l = state.loans.find(x=>x.id===repay.dataset.loanRepay); if (!l) return; const v = prompt("输入还款金额（不自动记账）", Math.max(0, l.amount-(l.repaid||0)).toFixed(2)); if (v === null) return; const n = Number(v); if (!Number.isFinite(n) || n <= 0 || n > l.amount-(l.repaid||0)+0.001) return toast("金额无效"); l.repaid = (l.repaid||0) + n; save(); renderLoans(); toast("已登记还款"); return; }
-});
-
-$("searchRecords").addEventListener("input", renderRecords);
-$("filterMonth").addEventListener("change", renderRecords);
-$("filterType").addEventListener("change", renderRecords);
-$("statsMonth").addEventListener("change", renderStats);
-$("budgetForm").addEventListener("submit", e => { e.preventDefault(); const v = Number($("budgetAmount").value); if (v < 0 || !Number.isFinite(v)) return toast("请输入有效预算"); state.budget[monthNow()] = Math.round(v*100)/100; save(); renderAll(); toast("预算已保存"); });
-
-["activityTotal","activityPeople","activityExtra"].forEach(id => $(id).addEventListener("input", renderActivityCalc));
-renderActivityCalc();
-
-$("activityForm").addEventListener("submit", e => {
-  e.preventDefault(); const name = $("activityName").value.trim(); const total = Number($("activityTotal").value); const people = Number($("activityPeople").value); const extra = Number($("activityExtra").value || 0);
-  if (!name) return toast("请填写活动名称"); if (!Number.isFinite(total) || total <= 0) return toast("请输入大于 0 的总金额"); if (!Number.isInteger(people) || people < 1) return toast("人数需为正整数");
-  const due = total + extra; const act = { id: "act-"+Date.now(), name, date: $("activityDate").value, total: Math.round(total*100)/100, people, extra: Math.round(extra*100)/100, note: $("activityNote").value.trim(), created: Date.now() };
-  state.activities.push(act);
-  if ($("activityAutoRecord").checked) { state.records.push({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), type: "income", amount: Math.round(due*100)/100, category: "活动", accountId: "wechat", date: act.date, note: `[活动自动] ${name}`, created: Date.now() }); }
-  save(); $("activityName").value = ""; $("activityTotal").value = ""; $("activityPeople").value = ""; $("activityExtra").value = "0"; $("activityNote").value = ""; $("activityDate").value = today(); renderActivities(); renderActivityCalc(); renderHome(); toast("活动已添加");
-});
-
-$("loanForm").addEventListener("submit", e => {
-  e.preventDefault(); const amount = Number($("loanAmount").value); if (amount <= 0) return toast("请输入有效金额"); const type = $("loanType").value, person = $("loanPerson").value.trim(), date = $("loanDate").value;
-  state.loans.push({ id: "l-"+Date.now(), type, person, amount: Math.round(amount*100)/100, date, note: $("loanNote").value.trim(), created: Date.now(), repaid: 0 });
-  if ($("loanAutoRecord").checked) { state.records.push({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), type: type === "lent" ? "expense" : "income", amount: Math.round(amount*100)/100, category: type === "lent" ? "借出" : "借入", accountId: "cash", date, note: `[借还自动] ${person}`, created: Date.now() }); }
-  save(); $("loanPerson").value = ""; $("loanAmount").value = ""; $("loanNote").value = ""; renderLoans(); renderHome(); toast("已添加借还记录");
-});
-
-$("exportCsv").addEventListener("click", exportCsv); $("exportExcel").addEventListener("click", exportExcel); $("exportJson").addEventListener("click", exportJson); $("settingsExport").addEventListener("click", exportJson); $("exportActivities").addEventListener("click", exportActivitiesCsv); $("settingsBtn").addEventListener("click", ()=>go("settings"));
-
-$("importJson").addEventListener("change", async e => {
-  const f = e.target.files[0]; if (!f) return;
-  try { const obj = JSON.parse(await f.text()); if (!obj.state || !Array.isArray(obj.state.records)) throw new Error(); if (!confirm("恢复备份会覆盖当前数据，继续吗？")) return; state = obj.state; if (!state.categories) state.categories = defaultState().categories; if (!state.accounts.length) state.accounts = defaultState().accounts; if (!state.settings) state.settings = {pin:""}; if (!state.settings.themeColor) state.settings.themeColor = "blue"; if (!state.settings.fontFamily) state.settings.fontFamily = "default"; if (!state.settings.fontColor) state.settings.fontColor = "default"; save(); renderAll(); applyTheme(state.settings.themeColor); applyFont(state.settings.fontFamily); applyFontColor(state.settings.fontColor); checkPinLock(); toast("恢复成功"); } catch { toast("恢复失败：文件格式不正确"); } finally { e.target.value = ""; }
-});
-
-$("restoreBackupBtn").addEventListener("click", () => { const bak = localStorage.getItem(KEY + "_backup"); if (!bak) return toast("没有找到历史版本"); if (confirm("将恢复到上一次保存前的状态，当前改动会丢失。确定吗？")) { try { state = JSON.parse(bak); if (!state.settings.themeColor) state.settings.themeColor = "blue"; if (!state.settings.fontFamily) state.settings.fontFamily = "default"; if (!state.settings.fontColor) state.settings.fontColor = "default"; save(); renderAll(); applyTheme(state.settings.themeColor); applyFont(state.settings.fontFamily); applyFontColor(state.settings.fontColor); toast("已恢复历史版本"); } catch { toast("恢复失败"); } } });
-$("clearAll").addEventListener("click", () => { if (confirm("彻底清空所有数据？此操作不可撤销！")) { if (confirm("建议先导出备份。仍要清空吗？")) { state = defaultState(); save(); renderAll(); applyTheme("blue"); applyFont("default"); applyFontColor("default"); go("home"); toast("已清空"); } } });
-
-let currentCatType = "expense";
-function renderCatManage() { const list = state.categories[currentCatType]; $("catList").innerHTML = list.map((c, i) => `<div class="cat-manage-item"><span>${c.icon} ${c.name}</span><button type="button" class="mini-action delete" data-delcat="${i}">删除</button></div>`).join(""); }
-document.querySelectorAll("#catDialog [data-cattype]").forEach(b => b.addEventListener("click", () => { document.querySelectorAll("#catDialog [data-cattype]").forEach(x=>x.classList.toggle("active", x===b)); currentCatType = b.dataset.cattype; renderCatManage(); }));
-$("manageCatsBtn").addEventListener("click", () => { renderCatManage(); $("catDialog").showModal(); });
-$("addCatBtn").addEventListener("click", () => { const name = $("newCatName").value.trim(), icon = $("newCatIcon").value.trim() || "📌"; if (!name) return toast("请输入名称"); if (state.categories[currentCatType].some(c=>c.name===name)) return toast("已存在"); state.categories[currentCatType].push({name, icon}); save(); renderCatManage(); renderAll(); $("newCatName").value=""; $("newCatIcon").value=""; });
-$("catList").addEventListener("click", e => { const btn = e.target.closest("[data-delcat]"); if (btn) { if (confirm("删除后已使用该分类的账单不会消失，但将无法选择。确定吗？")) { state.categories[currentCatType].splice(Number(btn.dataset.delcat), 1); save(); renderCatManage(); renderAll(); } } });
-
-$("setPinBtn").addEventListener("click", () => { const p = prompt("请输入新的 4 位数字密码："); if (p === null) return; if (!/^\d{4}$/.test(p)) return toast("必须是 4 位数字"); state.settings.pin = p; save(); toast("密码已设置"); });
-$("removePinBtn").addEventListener("click", () => { state.settings.pin = ""; save(); toast("密码锁已关闭"); });
-$("pinPad").addEventListener("click", e => { const btn = e.target.closest("button"); if (!btn) return; const num = btn.dataset.num; if (num === "del") { currentPin = currentPin.slice(0, -1); renderDots(); } else if (num === "ok") { if (currentPin === state.settings.pin) $("lockScreen").classList.add("hidden"); else { toast("密码错误"); currentPin = ""; renderDots(); } } else if (currentPin.length < 4) { currentPin += num; renderDots(); } });
-
-$("customKeypad").addEventListener("click", e => {
-  const btn = e.target.closest("button"); if (!btn) return; if (btn.id === "keypadDone") return closeKeypad();
-  const k = btn.dataset.k;
-  if (k === "del") calcExpr = calcExpr.slice(0, -1) || "0"; else if (k === "clear") calcExpr = "0";
-  else if (k === "=") { try { const safeExpr = calcExpr.replace(/×/g,"*").replace(/÷/g,"/").replace(/[^0-9+\-*/.()]/g,""); calcExpr = String(eval(safeExpr)); } catch { toast("表达式错误"); } }
-  else { if (calcExpr === "0" && !/[+\-*/.]/.test(k)) calcExpr = k; else calcExpr += k; }
-  $("keypadExpr").textContent = calcExpr;
-});
-
-checkRecurring();
-renderAll();
-applyTheme(state.settings.themeColor);
-applyFont(state.settings.fontFamily);
-applyFontColor(state.settings.fontColor);
-checkPinLock();
-})();
+  const ld = e.target.closest("[data-loan-delete]"); if (ld) { if (confirm("确定删除这条借还记录吗？")) { state.loans = state.loans
