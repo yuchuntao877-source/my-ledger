@@ -295,13 +295,15 @@ document.querySelectorAll(".type-btn").forEach(b=>b.addEventListener("click",()=
   document.querySelectorAll(".type-btn").forEach(x=>x.classList.toggle("active",x===b)); renderCategories();
 }));
 
-// 颜色切换逻辑
-$("themeColors").addEventListener("click", e => {
-  const btn = e.target.closest(".theme-btn");
-  if (btn) {
-    state.settings.themeColor = btn.dataset.color; save(); applyTheme(btn.dataset.color);
-  }
-});
+// 颜色切换逻辑（加了安全判断）
+if($("themeColors")) {
+  $("themeColors").addEventListener("click", e => {
+    const btn = e.target.closest(".theme-btn");
+    if (btn) {
+      state.settings.themeColor = btn.dataset.color; save(); applyTheme(btn.dataset.color);
+    }
+  });
+}
 
 $("recordDate").value = today(); $("loanDate").value = today(); $("activityDate").value = today();
 $("filterMonth").value = monthNow(); $("statsMonth").value = monthNow();
@@ -399,6 +401,6 @@ $("customKeypad").addEventListener("click", e => {
 
 checkRecurring();
 renderAll();
-applyTheme(state.settings.themeColor); // 初始化主题
+applyTheme(state.settings.themeColor);
 checkPinLock();
 })();

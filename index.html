@@ -3,12 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- 强制浏览器只使用浅色模式，绝不反色 -->
+<meta name="color-scheme" content="light">
 <meta name="theme-color" content="#f4f7fb">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="我的账本">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 <title>我的账本</title>
 </head>
 <body>
@@ -191,17 +193,17 @@
     <section class="page" id="page-settings">
       <div class="section-title"><h2>设置与数据</h2></div>
       
-      <!-- 新增：主题颜色 -->
+      <!-- 色彩圆点区域 -->
       <div class="panel">
         <h3>主题颜色</h3>
         <p class="muted small">选择你喜欢的页面主色调。</p>
         <div class="theme-colors" id="themeColors">
-          <button data-color="blue" class="theme-btn active" style="background:#3b6fdc"></button>
-          <button data-color="green" class="theme-btn" style="background:#10b981"></button>
-          <button data-color="purple" class="theme-btn" style="background:#8b5cf6"></button>
-          <button data-color="orange" class="theme-btn" style="background:#f97316"></button>
-          <button data-color="pink" class="theme-btn" style="background:#ec4899"></button>
-          <button data-color="dark" class="theme-btn" style="background:#334155"></button>
+          <button type="button" data-color="blue" class="theme-btn active" style="background:#3b6fdc"></button>
+          <button type="button" data-color="green" class="theme-btn" style="background:#10b981"></button>
+          <button type="button" data-color="purple" class="theme-btn" style="background:#8b5cf6"></button>
+          <button type="button" data-color="orange" class="theme-btn" style="background:#f97316"></button>
+          <button type="button" data-color="pink" class="theme-btn" style="background:#ec4899"></button>
+          <button type="button" data-color="dark" class="theme-btn" style="background:#334155"></button>
         </div>
       </div>
 
@@ -289,6 +291,6 @@
 </div>
 
 <div id="toast" class="toast" role="status"></div>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
