@@ -3,14 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<!-- 强制浏览器只使用浅色模式，绝不反色 -->
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#f4f7fb">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="我的账本">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 <title>我的账本</title>
 </head>
 <body>
@@ -193,7 +192,7 @@
     <section class="page" id="page-settings">
       <div class="section-title"><h2>设置与数据</h2></div>
       
-      <!-- 色彩圆点区域 -->
+      <!-- 主题颜色（扩充至10个） -->
       <div class="panel">
         <h3>主题颜色</h3>
         <p class="muted small">选择你喜欢的页面主色调。</p>
@@ -203,7 +202,36 @@
           <button type="button" data-color="purple" class="theme-btn" style="background:#8b5cf6"></button>
           <button type="button" data-color="orange" class="theme-btn" style="background:#f97316"></button>
           <button type="button" data-color="pink" class="theme-btn" style="background:#ec4899"></button>
+          <button type="button" data-color="red" class="theme-btn" style="background:#ef4444"></button>
+          <button type="button" data-color="teal" class="theme-btn" style="background:#14b8a6"></button>
+          <button type="button" data-color="indigo" class="theme-btn" style="background:#6366f1"></button>
+          <button type="button" data-color="amber" class="theme-btn" style="background:#f59e0b"></button>
           <button type="button" data-color="dark" class="theme-btn" style="background:#334155"></button>
+        </div>
+      </div>
+
+      <!-- 字体样式 -->
+      <div class="panel">
+        <h3>字体样式</h3>
+        <p class="muted small">改变整个页面的字体风格。</p>
+        <select id="fontFamilySelect" style="margin-top:10px;">
+          <option value="default">系统默认 (清爽黑体)</option>
+          <option value="round">圆润幼圆 (可爱风)</option>
+          <option value="serif">优雅衬线 (宋体/阅读风)</option>
+          <option value="mono">数字等宽 (极客风)</option>
+        </select>
+      </div>
+
+      <!-- 字体颜色 -->
+      <div class="panel">
+        <h3>字体颜色</h3>
+        <p class="muted small">改变页面主要文字的颜色。</p>
+        <div class="text-colors" id="textColors">
+          <button type="button" data-text="default" class="theme-btn active" style="background:#1d2738"></button>
+          <button type="button" data-text="black" class="theme-btn" style="background:#000000"></button>
+          <button type="button" data-text="gray" class="theme-btn" style="background:#4b5563"></button>
+          <button type="button" data-text="brown" class="theme-btn" style="background:#5c4033"></button>
+          <button type="button" data-text="blue" class="theme-btn" style="background:#1e3a8a"></button>
         </div>
       </div>
 
@@ -291,6 +319,6 @@
 </div>
 
 <div id="toast" class="toast" role="status"></div>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

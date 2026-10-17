@@ -1,17 +1,42 @@
 *{box-sizing:border-box}
 
-/* ======= 颜色主题定义 ======= */
+/* ======= 变量定义 ======= */
 :root {
-  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
-  --bg:#f4f7fb; --card:#fff; --ink:#1d2738; --muted:#8a96a8; --line:#e2e8f0;
+  color-scheme: light !important;
+  --font-default: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-round: "Yuanti SC", "YouYuan", "Quicksand", sans-serif;
+  --font-serif: "Songti SC", "SimSun", Georgia, serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font: var(--font-default);
+  
+  --bg:#f4f7fb; --card:#fff; --muted:#8a96a8; --line:#e2e8f0;
   --green:#12a875; --red:#e55a4e;
   --shadow:0 8px 24px rgba(44,64,105,0.05);
   
+  --ink-default: #1d2738;
+  --ink-black: #000000;
+  --ink-gray: #4b5563;
+  --ink-brown: #5c4033;
+  --ink-blue: #1e3a8a;
+  --ink: var(--ink-default);
+
   /* 默认蓝色主题 */
   --c-primary: #4a7ce0;
   --c-hero: linear-gradient(135deg, #3b6fdc 0%, #5e82eb 50%, #8b71e3 100%);
   --c-btn: linear-gradient(110deg, #4a7ce0, #7469e6);
 }
+
+[data-font="default"] { --font: var(--font-default); }
+[data-font="round"] { --font: var(--font-round); }
+[data-font="serif"] { --font: var(--font-serif); }
+[data-font="mono"] { --font: var(--font-mono); }
+
+[data-text="default"] { --ink: var(--ink-default); }
+[data-text="black"] { --ink: var(--ink-black); }
+[data-text="gray"] { --ink: var(--ink-gray); }
+[data-text="brown"] { --ink: var(--ink-brown); }
+[data-text="blue"] { --ink: var(--ink-blue); }
+
 [data-theme="green"] {
   --c-primary: #10b981;
   --c-hero: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
@@ -32,14 +57,36 @@
   --c-hero: linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f472b6 100%);
   --c-btn: linear-gradient(110deg, #db2777, #f472b6);
 }
+[data-theme="red"] {
+  --c-primary: #ef4444;
+  --c-hero: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
+  --c-btn: linear-gradient(110deg, #dc2626, #f87171);
+}
+[data-theme="teal"] {
+  --c-primary: #14b8a6;
+  --c-hero: linear-gradient(135deg, #0d9488 0%, #14b8a6 50%, #2dd4bf 100%);
+  --c-btn: linear-gradient(110deg, #0d9488, #2dd4bf);
+}
+[data-theme="indigo"] {
+  --c-primary: #6366f1;
+  --c-hero: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%);
+  --c-btn: linear-gradient(110deg, #4f46e5, #818cf8);
+}
+[data-theme="amber"] {
+  --c-primary: #f59e0b;
+  --c-hero: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #fbbf24 100%);
+  --c-btn: linear-gradient(110deg, #d97706, #fbbf24);
+}
 [data-theme="dark"] {
   --c-primary: #475569;
   --c-hero: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
   --c-btn: linear-gradient(110deg, #1e293b, #475569);
 }
 
-body { margin:0; min-height:100vh; font-family:var(--font); color:var(--ink); background:var(--bg); background-image: radial-gradient(circle at 15% 0%, rgba(230,239,255,0.5) 0, transparent 350px), radial-gradient(circle at 85% 10%, rgba(243,232,255,0.5) 0, transparent 350px); background-attachment: fixed; }
-button,input,select { font: inherit; }
+/* 禁用双击放大核心 CSS */
+html, body { touch-action: manipulation; }
+body { margin:0; min-height:100vh; font-family:var(--font); color:var(--ink); background:var(--bg); background-image: radial-gradient(circle at 15% 0%, rgba(230,239,255,0.5) 0, transparent 350px), radial-gradient(circle at 85% 10%, rgba(243,232,255,0.5) 0, transparent 350px); background-attachment: fixed; transition: color 0.3s, font-family 0.3s; }
+button,input,select { font: inherit; color: inherit; }
 button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .app-shell { max-width: 760px; margin: 0 auto; padding: calc(18px + env(safe-area-inset-top)) 16px calc(94px + env(safe-area-inset-bottom)); }
 
@@ -48,7 +95,6 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .topbar h1 { font-size: 28px; letter-spacing: -.9px; margin: 0; font-weight: 780; }
 .icon-button { border: 1px solid var(--line); background: var(--card); width: 43px; height: 43px; border-radius: 16px; box-shadow: var(--shadow); font-size: 20px; color: var(--muted); display: grid; place-items: center; transition: .2s; }
 
-/* 概览卡片（动态主题颜色） */
 .hero-card { color: #fff; border-radius: 28px; padding: 23px 22px 20px; background: var(--c-hero); box-shadow: 0 16px 34px rgba(85,125,224,0.2); overflow: hidden; position: relative; }
 .hero-card:after { content: ""; position: absolute; width: 190px; height: 190px; border-radius: 50%; border: 1px solid #ffffff24; right: -55px; top: -85px; box-shadow: 0 0 0 22px #ffffff0a, 0 0 0 46px #ffffff08; pointer-events: none; }
 .hero-head { display: flex; align-items: center; justify-content: space-between; font-weight: 650; font-size: 13px; position: relative; z-index: 1; }
@@ -70,7 +116,6 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .text-button { border: 0; background: none; color: var(--c-primary); font-weight: 700; font-size: 12px; padding: 7px 0; white-space: nowrap; }
 .text-button.light { color: white; }
 
-/* 底部导航 */
 .tabs { display: flex; justify-content: space-between; gap: 4px; margin: 18px 0 23px; padding: 5px; background: #e9edf4; border: 1px solid var(--line); border-radius: 18px; transition: .3s; }
 .tab { flex: 1; border: 0; background: transparent; color: var(--muted); font-size: 12px; padding: 11px 3px; border-radius: 13px; font-weight: 680; transition: .2s; }
 .tab.active { background: var(--card); color: var(--c-primary); box-shadow: 0 3px 10px rgba(0,0,0,0.05); }
@@ -83,7 +128,6 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .section-title h3 { font-size: 15px; margin: 0; font-weight: 730; }
 .small { font-size: 11px; } .muted { color: var(--muted); }
 
-/* 日期分割线 */
 .date-divider { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px 8px; }
 .date-divider:first-child { padding-top: 4px; }
 .date-label { font-size: 13px; font-weight: 700; color: var(--ink); }
@@ -103,11 +147,9 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .checkbox-label { display: flex; flex-direction: row !important; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); cursor: pointer; margin-top: 4px; }
 .checkbox-label input { width: 16px; height: 16px; min-height: auto; margin: 0; }
 
-/* 按钮（动态主题颜色） */
 .primary-btn { width: 100%; border: 0; border-radius: 14px; padding: 14px 15px; background: var(--c-btn); color: #fff; font-weight: 760; font-size: 14px; box-shadow: 0 6px 16px rgba(85,125,224,0.25); margin-top: 18px; min-height: 48px; transition: .2s; }
 .secondary-btn, .import-btn { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); background: #f5f8fe; color: var(--c-primary); border-radius: 13px; padding: 11px 12px; font-size: 12px; font-weight: 720; min-height: 42px; transition: .2s; }
 
-/* 类型切换 */
 .type-switch { display: grid; grid-template-columns: repeat(3,1fr); padding: 4px; border-radius: 15px; background: #eef2f6; margin-bottom: 13px; }
 .type-btn { border: 0; background: transparent; border-radius: 11px; padding: 11px; color: var(--muted); font-size: 13px; font-weight: 720; transition: .2s; }
 .type-btn.active { background: var(--card); color: var(--c-primary); box-shadow: 0 2px 7px rgba(0,0,0,0.06); }
@@ -170,8 +212,8 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .danger-btn { border: 1px solid #f6d4d2; color: #d1453a; background: #fff; border-radius: 12px; padding: 12px 14px; font-size: 12px; font-weight: 720; }
 
 /* 颜色选择器 */
-.theme-colors { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
-.theme-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; box-shadow: 0 2px 6px rgba(0,0,0,0.1); transition: .2s; padding: 0; }
+.theme-colors, .text-colors { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+.theme-btn { display: block !important; width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent; box-shadow: 0 2px 6px rgba(0,0,0,0.1); transition: .2s; padding: 0; }
 .theme-btn.active { border-color: #fff; outline: 2px solid var(--c-primary); transform: scale(1.1); }
 
 .cat-manage-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; padding-right: 5px; }
@@ -221,7 +263,5 @@ footer { text-align: center; color: var(--muted); font-size: 10px; padding: 24px
   .panel { padding: 16px; border-radius: 20px; } .record-item { padding: 12px; gap: 11px; } .record-icon { width: 42px; height: 42px; border-radius: 14px; }
   .activity-calc { grid-template-columns: 1fr 1fr; }
   .activity-calc div:last-child { grid-column: 1/-1; display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 4px; }
-  
-  /* 核心修复：强制移动端输入框字体为 16px，防止 iOS 自动放大 */
   input, select, textarea { font-size: 16px !important; }
 }

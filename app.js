@@ -17,7 +17,7 @@ const defaultState = () => ({
     expense: ["餐饮","交通","购物","居家","住房","医疗","娱乐","学习","人情","旅行","通讯","其他"].map(n=>({name:n, icon:getDefaultIcon(n)})),
     income: ["工资","奖金","兼职","投资收益","红包","退款","其他收入"].map(n=>({name:n, icon:getDefaultIcon(n)}))
   },
-  settings: { pin: "", themeColor: "blue" }
+  settings: { pin: "", themeColor: "blue", fontFamily: "default", fontColor: "default" }
 });
 
 function getDefaultIcon(name) {
@@ -36,10 +36,22 @@ if (!Array.isArray(state.accounts) || !state.accounts.length) state.accounts = d
 if (!state.categories) state.categories = defaultState().categories;
 if (!state.settings) state.settings = { pin: "" };
 if (!state.settings.themeColor) state.settings.themeColor = "blue";
+if (!state.settings.fontFamily) state.settings.fontFamily = "default";
+if (!state.settings.fontColor) state.settings.fontColor = "default";
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.color === theme));
+  document.querySelectorAll('#themeColors .theme-btn').forEach(b => b.classList.toggle('active', b.dataset.color === theme));
+}
+
+function applyFont(family) {
+  document.documentElement.setAttribute('data-font', family);
+  if ($("fontFamilySelect")) $("fontFamilySelect").value = family;
+}
+
+function applyFontColor(color) {
+  document.documentElement.setAttribute('data-text', color);
+  document.querySelectorAll('#textColors .theme-btn').forEach(b => b.classList.toggle('active', b.dataset.text === color));
 }
 
 function backupState() { try { localStorage.setItem(KEY + "_backup", localStorage.getItem(KEY) || ""); } catch(e){} }
@@ -295,13 +307,31 @@ document.querySelectorAll(".type-btn").forEach(b=>b.addEventListener("click",()=
   document.querySelectorAll(".type-btn").forEach(x=>x.classList.toggle("active",x===b)); renderCategories();
 }));
 
-// 颜色切换逻辑（加了安全判断）
+// 拦截双击放大
+document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => {
+  const now = (new Date()).getTime();
+  if (now - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = now;
+}, false);
+
+// 颜色、字体、字体颜色切换
 if($("themeColors")) {
   $("themeColors").addEventListener("click", e => {
     const btn = e.target.closest(".theme-btn");
-    if (btn) {
-      state.settings.themeColor = btn.dataset.color; save(); applyTheme(btn.dataset.color);
-    }
+    if (btn) { state.settings.themeColor = btn.dataset.color; save(); applyTheme(btn.dataset.color); }
+  });
+}
+if($("fontFamilySelect")) {
+  $("fontFamilySelect").addEventListener("change", e => {
+    state.settings.fontFamily = e.target.value; save(); applyFont(e.target.value);
+  });
+}
+if($("textColors")) {
+  $("textColors").addEventListener("click", e => {
+    const btn = e.target.closest(".theme-btn");
+    if (btn) { state.settings.fontColor = btn.dataset.text; save(); applyFontColor(btn.dataset.text); }
   });
 }
 
@@ -373,11 +403,11 @@ $("exportCsv").addEventListener("click", exportCsv); $("exportExcel").addEventLi
 
 $("importJson").addEventListener("change", async e => {
   const f = e.target.files[0]; if (!f) return;
-  try { const obj = JSON.parse(await f.text()); if (!obj.state || !Array.isArray(obj.state.records)) throw new Error(); if (!confirm("恢复备份会覆盖当前数据，继续吗？")) return; state = obj.state; if (!state.categories) state.categories = defaultState().categories; if (!state.accounts.length) state.accounts = defaultState().accounts; if (!state.settings) state.settings = {pin:""}; if (!state.settings.themeColor) state.settings.themeColor = "blue"; save(); renderAll(); applyTheme(state.settings.themeColor); checkPinLock(); toast("恢复成功"); } catch { toast("恢复失败：文件格式不正确"); } finally { e.target.value = ""; }
+  try { const obj = JSON.parse(await f.text()); if (!obj.state || !Array.isArray(obj.state.records)) throw new Error(); if (!confirm("恢复备份会覆盖当前数据，继续吗？")) return; state = obj.state; if (!state.categories) state.categories = defaultState().categories; if (!state.accounts.length) state.accounts = defaultState().accounts; if (!state.settings) state.settings = {pin:""}; if (!state.settings.themeColor) state.settings.themeColor = "blue"; if (!state.settings.fontFamily) state.settings.fontFamily = "default"; if (!state.settings.fontColor) state.settings.fontColor = "default"; save(); renderAll(); applyTheme(state.settings.themeColor); applyFont(state.settings.fontFamily); applyFontColor(state.settings.fontColor); checkPinLock(); toast("恢复成功"); } catch { toast("恢复失败：文件格式不正确"); } finally { e.target.value = ""; }
 });
 
-$("restoreBackupBtn").addEventListener("click", () => { const bak = localStorage.getItem(KEY + "_backup"); if (!bak) return toast("没有找到历史版本"); if (confirm("将恢复到上一次保存前的状态，当前改动会丢失。确定吗？")) { try { state = JSON.parse(bak); if (!state.settings.themeColor) state.settings.themeColor = "blue"; save(); renderAll(); applyTheme(state.settings.themeColor); toast("已恢复历史版本"); } catch { toast("恢复失败"); } } });
-$("clearAll").addEventListener("click", () => { if (confirm("彻底清空所有数据？此操作不可撤销！")) { if (confirm("建议先导出备份。仍要清空吗？")) { state = defaultState(); save(); renderAll(); applyTheme("blue"); go("home"); toast("已清空"); } } });
+$("restoreBackupBtn").addEventListener("click", () => { const bak = localStorage.getItem(KEY + "_backup"); if (!bak) return toast("没有找到历史版本"); if (confirm("将恢复到上一次保存前的状态，当前改动会丢失。确定吗？")) { try { state = JSON.parse(bak); if (!state.settings.themeColor) state.settings.themeColor = "blue"; if (!state.settings.fontFamily) state.settings.fontFamily = "default"; if (!state.settings.fontColor) state.settings.fontColor = "default"; save(); renderAll(); applyTheme(state.settings.themeColor); applyFont(state.settings.fontFamily); applyFontColor(state.settings.fontColor); toast("已恢复历史版本"); } catch { toast("恢复失败"); } } });
+$("clearAll").addEventListener("click", () => { if (confirm("彻底清空所有数据？此操作不可撤销！")) { if (confirm("建议先导出备份。仍要清空吗？")) { state = defaultState(); save(); renderAll(); applyTheme("blue"); applyFont("default"); applyFontColor("default"); go("home"); toast("已清空"); } } });
 
 let currentCatType = "expense";
 function renderCatManage() { const list = state.categories[currentCatType]; $("catList").innerHTML = list.map((c, i) => `<div class="cat-manage-item"><span>${c.icon} ${c.name}</span><button type="button" class="mini-action delete" data-delcat="${i}">删除</button></div>`).join(""); }
@@ -402,5 +432,7 @@ $("customKeypad").addEventListener("click", e => {
 checkRecurring();
 renderAll();
 applyTheme(state.settings.themeColor);
+applyFont(state.settings.fontFamily);
+applyFontColor(state.settings.fontColor);
 checkPinLock();
 })();
