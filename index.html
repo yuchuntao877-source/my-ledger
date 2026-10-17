@@ -9,7 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="我的账本">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=8">
+<!-- 强制刷新缓存 v=9 -->
+<link rel="stylesheet" href="style.css?v=9">
 <title>我的账本</title>
 </head>
 <body>
@@ -192,7 +193,6 @@
     <section class="page" id="page-settings">
       <div class="section-title"><h2>设置与数据</h2></div>
 
-      <!-- 主题颜色 -->
       <div class="panel">
         <h3>主题颜色</h3>
         <p class="muted small">选择喜欢的页面主色调，或用下方 360° 色盘自定义任意颜色。</p>
@@ -218,14 +218,12 @@
         </label>
       </div>
 
-      <!-- 字体样式 -->
       <div class="panel">
         <h3>字体样式</h3>
         <p class="muted small">改变整个页面的字体风格（共 24 种）。</p>
         <select id="fontFamilySelect" style="margin-top:10px;"></select>
       </div>
 
-      <!-- 字体颜色 -->
       <div class="panel">
         <h3>字体颜色</h3>
         <p class="muted small">改变页面主要文字颜色，或用 360° 色盘自定义。</p>
@@ -276,6 +274,15 @@
   </main>
   <footer>我的账本 · 轻量、私密、好上手</footer>
 </div>
+
+<!-- 账单操作菜单 -->
+<dialog id="actionDialog" class="app-dialog action-dialog">
+  <div class="action-menu">
+    <button type="button" class="action-btn" id="actionEdit">编辑账单</button>
+    <button type="button" class="action-btn danger" id="actionDelete">删除账单</button>
+    <button type="button" class="action-btn cancel" onclick="document.getElementById('actionDialog').close()">取消</button>
+  </div>
+</dialog>
 
 <dialog id="editDialog" class="app-dialog">
   <form method="dialog" id="editForm">
@@ -351,6 +358,7 @@
 </dialog>
 
 <div id="toast" class="toast" role="status"></div>
-<script src="app.js?v=8"></script>
+<!-- 强制刷新缓存 v=9 -->
+<script src="app.js?v=9"></script>
 </body>
 </html>

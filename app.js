@@ -42,7 +42,6 @@ if (!state.settings.fontColor) state.settings.fontColor = "default";
 if (!state.settings.customTheme) state.settings.customTheme = "#4a7ce0";
 if (!state.settings.customText) state.settings.customText = "#1d2738";
 
-/* ===== 字体库：24 种 ===== */
 const FONTS = [
   { id: "default",   name: "系统默认（清爽黑体）",       stack: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif' },
   { id: "round",     name: "圆润幼圆（可爱风）",         stack: '"Yuanti SC", "YouYuan", "Quicksand", "PingFang SC", sans-serif' },
@@ -228,6 +227,7 @@ function groupByDate(records) {
   return Object.entries(groups).sort((a,b) => b[0].localeCompare(a[0]));
 }
 
+/* 彻底移除了滑动，改为 ⋮ 按钮 */
 function recordHtml(r) {
   const isInc = r.type === "income", isTransfer = r.type === "transfer";
   const sign = isTransfer ? "↔" : isInc ? "+" : "−";
@@ -235,19 +235,17 @@ function recordHtml(r) {
   const details = isTransfer ? `${accountName(r.accountId)} → ${accountName(r.toAccountId)}` : `${accountName(r.accountId)}${r.note ? " · " + safe(r.note) : ""}`;
   const icon = getIcon(r.category);
   return `
-  <div class="swipe-wrapper">
-    <div class="swipe-content">
-      <article class="record-item">
-        <div class="record-icon ${isInc?'icon-income':isTransfer?'icon-transfer':'icon-expense'}">${icon}</div>
-        <div class="record-main"><div class="record-name">${safe(r.category)}${r.note?` · ${safe(r.note)}`:""}</div><div class="record-meta">${safe(details)}</div></div>
-        <div class="record-right"><div class="record-amount ${amountClass}">${sign}${money(r.amount)}</div></div>
-      </article>
+  <article class="record-item">
+    <div class="record-icon ${isInc?'icon-income':isTransfer?'icon-transfer':'icon-expense'}">${icon}</div>
+    <div class="record-main">
+      <div class="record-name">${safe(r.category)}${r.note?` · ${safe(r.note)}`:""}</div>
+      <div class="record-meta">${safe(details)}</div>
     </div>
-    <div class="swipe-actions">
-      <button class="swipe-btn edit" data-edit="${safe(r.id)}">编辑</button>
-      <button class="swipe-btn delete" data-delete="${safe(r.id)}">删除</button>
+    <div class="record-right">
+      <div class="record-amount ${amountClass}">${sign}${money(r.amount)}</div>
+      <button class="more-btn" data-more="${safe(r.id)}" aria-label="操作">⋮</button>
     </div>
-  </div>`;
+  </article>`;
 }
 
 function empty(msg){ return `<div class="empty-state">${safe(msg)}</div>`; }
@@ -322,9 +320,9 @@ function activityHtml(a) {
     </div>
     <div class="record-right">
       <div class="record-amount">${money(total)}</div>
-      <div class="record-actions">
-        ${settled ? '' : `<button class="mini-action primary" data-activity-receive="${safe(a.id)}">快捷收款</button>`}
-        <button class="mini-action delete" data-activity-delete="${safe(a.id)}">删除</button>
+      <div class="record-actions" style="display:flex;flex-direction:column;gap:5px;margin-top:5px">
+        ${settled ? '' : `<button class="mini-action primary" style="background:none;border:none;color:var(--c-primary);font-size:10px;padding:0" data-activity-receive="${safe(a.id)}">快捷收款</button>`}
+        <button class="mini-action delete" style="background:none;border:none;color:var(--red);font-size:10px;padding:0" data-activity-delete="${safe(a.id)}">删除</button>
       </div>
     </div>
   </article>`;
@@ -350,9 +348,9 @@ function renderLoans() {
       </div>
       <div class="record-right">
         <div class="record-amount">${money(l.amount)}</div>
-        <div class="record-actions">
-          ${done ? '' : `<button class="mini-action primary" data-loan-repay="${safe(l.id)}">快捷还款</button>`}
-          <button class="mini-action delete" data-loan-delete="${safe(l.id)}">删除</button>
+        <div class="record-actions" style="display:flex;flex-direction:column;gap:5px;margin-top:5px">
+          ${done ? '' : `<button class="mini-action primary" style="background:none;border:none;color:var(--c-primary);font-size:10px;padding:0" data-loan-repay="${safe(l.id)}">快捷还款</button>`}
+          <button class="mini-action delete" style="background:none;border:none;color:var(--red);font-size:10px;padding:0" data-loan-delete="${safe(l.id)}">删除</button>
         </div>
       </div>
     </article>`;
@@ -365,11 +363,8 @@ function renderAll() {
   renderActivities(); renderLoans();
 }
 
-/* ===== 快捷还款 / 快捷收款 ===== */
 function openQuickDialog(mode, id) {
-  $("quickMode").value = mode;
-  $("quickId").value = id;
-  $("quickDate").value = today();
+  $("quickMode").value = mode; $("quickId").value = id; $("quickDate").value = today();
   if (mode === "loan") {
     const l = state.loans.find(x => x.id === id); if (!l) return;
     const remain = Math.max(0, Number(l.amount) - Number(l.repaid || 0));
@@ -391,8 +386,7 @@ function openQuickDialog(mode, id) {
     $("quickAmount").value = remain ? remain.toFixed(2) : "";
     $("quickAutoRecord").checked = true;
     $("quickAutoLabel").textContent = "同时记一笔收入账单";
-    $("quickAmounts").innerHTML = remain > 0
-      ? `<button type="button" class="quick-chip" data-amt="${remain.toFixed(2)}">全部收齐 ${money(remain)}</button>` : "";
+    $("quickAmounts").innerHTML = remain > 0 ? `<button type="button" class="quick-chip" data-amt="${remain.toFixed(2)}">全部收齐 ${money(remain)}</button>` : "";
   }
   $("quickDialog").showModal();
 }
@@ -409,7 +403,6 @@ $("quickForm").addEventListener("submit", e => {
   const date = $("quickDate").value, auto = $("quickAutoRecord").checked;
   if (!Number.isFinite(amt) || amt <= 0) return toast("请输入有效金额");
   if (!date) return toast("请选择日期");
-
   if (mode === "loan") {
     const l = state.loans.find(x => x.id === id); if (!l) return;
     const remain = Math.max(0, Number(l.amount) - Number(l.repaid || 0));
@@ -438,13 +431,9 @@ $("quickForm").addEventListener("submit", e => {
       });
     }
   }
-  save();
-  renderAll();
-  $("quickDialog").close();
-  toast("已记录");
+  save(); renderAll(); $("quickDialog").close(); toast("已记录");
 });
 
-/* ===== 导出 / 备份 ===== */
 function download(name, content, type) {
   const blob = new Blob(["\ufeff", content], {type}); const url = URL.createObjectURL(blob), a = document.createElement("a");
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
@@ -488,12 +477,10 @@ function checkRecurring() {
   if (changed) save();
 }
 
-/* ===== 密码锁 ===== */
 let currentPin = "";
 function renderDots() { const dots = $("pinDots").children; for(let i=0;i<4;i++) dots[i].classList.toggle("filled", i < currentPin.length); }
 function checkPinLock() { if (state.settings.pin) { $("lockScreen").classList.remove("hidden"); currentPin = ""; renderDots(); } else { $("lockScreen").classList.add("hidden"); } }
 
-/* ===== 自定义键盘 ===== */
 let calcExpr = "", calcTargetInput = null;
 function openKeypad(inputEl) { calcTargetInput = inputEl; calcExpr = inputEl.value !== "" ? inputEl.value : "0"; $("keypadExpr").textContent = calcExpr; $("customKeypad").classList.remove("hidden"); }
 function closeKeypad() {
@@ -502,14 +489,12 @@ function closeKeypad() {
   const num = Number(finalVal); calcTargetInput.value = isNaN(num) ? "" : Math.round(num*100)/100; $("customKeypad").classList.add("hidden");
 }
 
-/* ===== 页面切换 ===== */
 document.querySelectorAll(".tab,[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
 document.querySelectorAll(".type-btn").forEach(b=>b.addEventListener("click",()=>{
   if (b.dataset.cattype) return;
   document.querySelectorAll(".type-btn").forEach(x=>x.classList.toggle("active",x===b)); renderCategories();
 }));
 
-/* ===== 拦截双击放大 ===== */
 document.addEventListener('dblclick', e => e.preventDefault(), { passive:false });
 let lastTouchEnd = 0;
 document.addEventListener('touchend', e => {
@@ -518,7 +503,6 @@ document.addEventListener('touchend', e => {
   lastTouchEnd = now;
 }, false);
 
-/* ===== 颜色 / 字体切换 ===== */
 if($("themeColors")) {
   $("themeColors").addEventListener("click", e => {
     const btn = e.target.closest(".theme-btn");
@@ -553,7 +537,6 @@ if($("customTextPicker")) {
   $("customTextPicker").addEventListener("change", () => save());
 }
 
-/* ===== 表单：账单 ===== */
 $("recordDate").value = today(); $("loanDate").value = today(); $("activityDate").value = today();
 $("filterMonth").value = monthNow(); $("statsMonth").value = monthNow();
 $("amount").addEventListener("focus", e => { e.target.blur(); openKeypad(e.target); });
@@ -578,8 +561,8 @@ $("recordForm").addEventListener("submit", e => {
   renderAll(); toast("已保存");
 });
 
-/* ===== 编辑账单 ===== */
 let editingRecordId = null;
+let actionRecordId = null;
 function openEditDialog(id) {
   const r = state.records.find(x=>x.id===id); if (!r) return;
   editingRecordId = id;
@@ -587,6 +570,17 @@ function openEditDialog(id) {
   $("editAccount").value = r.accountId; $("editDate").value = r.date; $("editNote").value = r.note || "";
   $("editDialog").showModal();
 }
+
+$("actionEdit").addEventListener("click", () => { $("actionDialog").close(); openEditDialog(actionRecordId); });
+$("actionDelete").addEventListener("click", () => {
+  $("actionDialog").close();
+  const r = state.records.find(x=>x.id===actionRecordId);
+  if (r && confirm(`确定删除这笔 ${money(r.amount)} 吗？`)) {
+    state.records = state.records.filter(x=>x.id!==r.id);
+    save(); renderAll(); toast("已删除");
+  }
+});
+
 $("editForm").addEventListener("submit", e => {
   e.preventDefault();
   const r = state.records.find(x=>x.id===editingRecordId); if (!r) return;
@@ -596,23 +590,16 @@ $("editForm").addEventListener("submit", e => {
   save(); renderAll(); $("editDialog").close(); toast("已更新");
 });
 
-/* ===== 全局点击：删除 / 编辑 / 借还 / 活动 / 卡片展开切换（合并，无冲突） ===== */
 document.addEventListener("click", e => {
-  /* 1) 记录删除 */
-  const del = e.target.closest("[data-delete]");
-  if (del) {
-    const r = state.records.find(x=>x.id===del.dataset.delete);
-    if (r && confirm(`确定删除这笔 ${money(r.amount)} 吗？`)) {
-      state.records = state.records.filter(x=>x.id!==r.id);
-      save(); renderAll(); toast("已删除");
-    }
+  /* 全局触发操作菜单（⋮） */
+  const more = e.target.closest("[data-more]");
+  if (more) {
+    actionRecordId = more.dataset.more;
+    $("actionDialog").showModal();
     return;
   }
-  /* 2) 记录编辑 */
-  const edit = e.target.closest("[data-edit]");
-  if (edit) { openEditDialog(edit.dataset.edit); return; }
 
-  /* 3) 活动删除 */
+  /* 活动删除 */
   const actDel = e.target.closest("[data-activity-delete]");
   if (actDel) {
     const a = state.activities.find(x=>x.id===actDel.dataset.activityDelete);
@@ -622,7 +609,7 @@ document.addEventListener("click", e => {
     }
     return;
   }
-  /* 4) 借还删除 */
+  /* 借还删除 */
   const ld = e.target.closest("[data-loan-delete]");
   if (ld) {
     if (confirm("确定删除这条借还记录吗？")) {
@@ -631,7 +618,7 @@ document.addEventListener("click", e => {
     }
     return;
   }
-  /* 5) 快捷还款 */
+  /* 快捷还款 */
   const repay = e.target.closest("[data-loan-repay]");
   if (repay) {
     const l = state.loans.find(x=>x.id===repay.dataset.loanRepay);
@@ -640,7 +627,7 @@ document.addEventListener("click", e => {
     openQuickDialog("loan", repay.dataset.loanRepay);
     return;
   }
-  /* 6) 快捷收款 */
+  /* 快捷收款 */
   const receive = e.target.closest("[data-activity-receive]");
   if (receive) {
     const a = state.activities.find(x=>x.id===receive.dataset.activityReceive);
@@ -650,18 +637,8 @@ document.addEventListener("click", e => {
     openQuickDialog("activity", receive.dataset.activityReceive);
     return;
   }
-
-  /* 7) 卡片展开/收起（替代滑动） */
-  const item = e.target.closest(".record-item");
-  document.querySelectorAll(".swipe-wrapper.open").forEach(w => {
-    if (!item || !w.contains(item)) w.classList.remove("open");
-  });
-  if (!item) return;
-  const wrapper = item.closest(".swipe-wrapper");
-  if (wrapper) wrapper.classList.toggle("open");
 });
 
-/* ===== 搜索 / 筛选 ===== */
 $("searchRecords").addEventListener("input", renderRecords);
 $("filterMonth").addEventListener("change", renderRecords);
 $("filterType").addEventListener("change", renderRecords);
@@ -675,7 +652,6 @@ $("budgetForm").addEventListener("submit", e => {
   save(); renderAll(); toast("预算已保存");
 });
 
-/* ===== 活动表单 ===== */
 ["activityTotal","activityPeople","activityExtra"].forEach(id => $(id).addEventListener("input", renderActivityCalc));
 renderActivityCalc();
 $("activityForm").addEventListener("submit", e => {
@@ -699,7 +675,6 @@ $("activityForm").addEventListener("submit", e => {
   renderActivities(); renderActivityCalc(); renderHome(); toast("活动已添加");
 });
 
-/* ===== 借还表单 ===== */
 $("loanForm").addEventListener("submit", e => {
   e.preventDefault();
   const amount = Number($("loanAmount").value);
@@ -714,7 +689,6 @@ $("loanForm").addEventListener("submit", e => {
   renderLoans(); renderHome(); toast("已添加借还记录");
 });
 
-/* ===== 导出绑定 ===== */
 $("exportCsv").addEventListener("click", exportCsv);
 $("exportExcel").addEventListener("click", exportExcel);
 $("exportJson").addEventListener("click", exportJson);
@@ -722,7 +696,6 @@ $("settingsExport").addEventListener("click", exportJson);
 $("exportActivities").addEventListener("click", exportActivitiesCsv);
 $("settingsBtn").addEventListener("click", ()=>go("settings"));
 
-/* ===== 导入 JSON ===== */
 $("importJson").addEventListener("change", async e => {
   const f = e.target.files[0]; if (!f) return;
   try {
@@ -752,7 +725,6 @@ $("importJson").addEventListener("change", async e => {
   finally { e.target.value = ""; }
 });
 
-/* ===== 恢复历史版本 ===== */
 $("restoreBackupBtn").addEventListener("click", () => {
   const bak = localStorage.getItem(KEY + "_backup");
   if (!bak) return toast("没有找到历史版本");
@@ -774,7 +746,6 @@ $("restoreBackupBtn").addEventListener("click", () => {
   } catch { toast("恢复失败"); }
 });
 
-/* ===== 清空全部 ===== */
 $("clearAll").addEventListener("click", () => {
   if (!confirm("彻底清空所有数据？此操作不可撤销！")) return;
   if (!confirm("建议先导出备份。仍要清空吗？")) return;
@@ -785,7 +756,6 @@ $("clearAll").addEventListener("click", () => {
   go("home"); toast("已清空");
 });
 
-/* ===== 分类管理 ===== */
 let currentCatType = "expense";
 function renderCatManage() {
   const list = state.categories[currentCatType];
@@ -812,7 +782,6 @@ $("catList").addEventListener("click", e => {
   }
 });
 
-/* ===== 密码锁按钮 ===== */
 $("setPinBtn").addEventListener("click", () => {
   const p = prompt("请输入新的 4 位数字密码：");
   if (p === null) return;
@@ -830,7 +799,6 @@ $("pinPad").addEventListener("click", e => {
   } else if (currentPin.length < 4) { currentPin += num; renderDots(); }
 });
 
-/* ===== 自定义键盘 ===== */
 $("customKeypad").addEventListener("click", e => {
   const btn = e.target.closest("button"); if (!btn) return;
   if (btn.id === "keypadDone") return closeKeypad();
@@ -847,7 +815,6 @@ $("customKeypad").addEventListener("click", e => {
   $("keypadExpr").textContent = calcExpr;
 });
 
-/* ===== 初始化 ===== */
 checkRecurring();
 initFontSelect();
 renderAll();
