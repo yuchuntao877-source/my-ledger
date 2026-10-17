@@ -70,30 +70,30 @@ const FONTS = [
   { id: "cursive",   name: "手写体",                     stack: '"Bradley Hand", "Segoe Print", "Comic Sans MS", cursive' }
 ];
 
-const PRESET_THEME_HEX = { blue: "#4a7ce0", green: "#10b981", purple: "#8b5cf6", orange: "#f97316", pink: "#ec4899", red: "#ef4444", teal: "#14b8a6", indigo: "#6366f1", amber: "#f59e0b", dark: "#334155" };
-const INK_MAP = { default: "#1d2738", black: "#000000", gray: "#4b5563", brown: "#5c4033", blue: "#1e3a8a" };
+const PRESET_THEME_HEX = { blue:"#4a7ce0", green:"#10b981", purple:"#8b5cf6", orange:"#f97316", pink:"#ec4899", red:"#ef4444", teal:"#14b8a6", indigo:"#6366f1", amber:"#f59e0b", dark:"#334155" };
+const INK_MAP = { default:"#1d2738", black:"#000000", gray:"#4b5563", brown:"#5c4033", blue:"#1e3a8a" };
 const clampPct = v => Math.max(6, Math.min(92, v));
 const isHex = h => /^#[0-9a-f]{6}$/i.test(h || "");
 
 function hexToHsl(hex) {
-  let r = 0, g = 0, b = 0;
   const h6 = String(hex || "").replace("#", "");
-  if (h6.length === 3) { r = parseInt(h6[0]+h6[0],16); g = parseInt(h6[1]+h6[1],16); b = parseInt(h6[2]+h6[2],16); }
-  else if (h6.length === 6) { r = parseInt(h6.slice(0,2),16); g = parseInt(h6.slice(2,4),16); b = parseInt(h6.slice(4,6),16); }
-  r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r,g,b), min = Math.min(r,g,b);
-  let h = 0, s = 0, l = (max + min) / 2;
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
+  let r=0,g=0,b=0;
+  if (h6.length===3){ r=parseInt(h6[0]+h6[0],16); g=parseInt(h6[1]+h6[1],16); b=parseInt(h6[2]+h6[2],16); }
+  else if (h6.length===6){ r=parseInt(h6.slice(0,2),16); g=parseInt(h6.slice(2,4),16); b=parseInt(h6.slice(4,6),16); }
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let h=0,s=0,l=(max+min)/2;
+  if (max!==min){
+    const d=max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){
+      case r: h=(g-b)/d+(g<b?6:0); break;
+      case g: h=(b-r)/d+2; break;
+      case b: h=(r-g)/d+4; break;
     }
-    h *= 60;
+    h*=60;
   }
-  return { h: Math.round(h), s: Math.round(s*100), l: Math.round(l*100) };
+  return { h:Math.round(h), s:Math.round(s*100), l:Math.round(l*100) };
 }
 
 function initFontSelect() {
@@ -106,7 +106,7 @@ function initFontSelect() {
 function applyTheme(theme, customHex) {
   const root = document.documentElement;
   const custom = theme === "custom" && isHex(customHex);
-  const effective = (theme === "custom" && !custom) ? "blue" : theme;
+  const effective = (theme === "custom" && !custom) ? "blue" : (theme || "blue");
   if (custom) {
     const c = hexToHsl(customHex);
     root.removeAttribute("data-theme");
@@ -119,12 +119,12 @@ function applyTheme(theme, customHex) {
     root.style.removeProperty("--c-primary");
     root.style.removeProperty("--c-hero");
     root.style.removeProperty("--c-btn");
-    root.setAttribute("data-theme", effective || "blue");
+    root.setAttribute("data-theme", effective);
   }
   document.querySelectorAll("#themeColors .theme-btn").forEach(b =>
     b.classList.toggle("active", !custom && b.dataset.color === effective));
   const picker = $("customThemePicker");
-  if (picker) picker.value = isHex(customHex) ? customHex : (PRESET_THEME_HEX[effective] || "#4a7ce0");
+  if (picker) picker.value = custom ? customHex : (PRESET_THEME_HEX[effective] || "#4a7ce0");
   const center = $("themeWheelCenter");
   if (center) center.style.background = custom ? customHex : (PRESET_THEME_HEX[effective] || "#4a7ce0");
 }
@@ -139,7 +139,7 @@ function applyFont(family) {
 function applyFontColor(color, customHex) {
   const root = document.documentElement;
   const custom = color === "custom" && isHex(customHex);
-  const effective = (color === "custom" && !custom) ? "default" : color;
+  const effective = (color === "custom" && !custom) ? "default" : (color || "default");
   const hex = custom ? customHex : (INK_MAP[effective] || INK_MAP.default);
   root.style.setProperty("--ink", hex);
   root.removeAttribute("data-text");
@@ -201,7 +201,7 @@ function calcNetWorth() {
 
 function formatDateLabel(dateStr) {
   const dateObj = new Date(dateStr);
-  const days = ["日", "一", "二", "三", "四", "五", "六"];
+  const days = ["日","一","二","三","四","五","六"];
   const week = `周${days[dateObj.getDay()]}`;
   const td = today();
   const d = new Date(td); d.setDate(d.getDate() - 1);
@@ -212,15 +212,12 @@ function formatDateLabel(dateStr) {
 }
 
 function renderDateDivider(dateStr, dayRecords) {
-  let inc = 0, exp = 0;
-  dayRecords.forEach(r => {
-    if(r.type === "income") inc += Number(r.amount);
-    if(r.type === "expense") exp += Number(r.amount);
-  });
+  let inc=0, exp=0;
+  dayRecords.forEach(r => { if(r.type==="income") inc+=Number(r.amount); if(r.type==="expense") exp+=Number(r.amount); });
   let summary = "";
-  if (inc > 0 && exp > 0) summary = `支 ${money(exp)} / 收 ${money(inc)}`;
-  else if (exp > 0) summary = `支出 ${money(exp)}`;
-  else if (inc > 0) summary = `收入 ${money(inc)}`;
+  if (inc>0 && exp>0) summary = `支 ${money(exp)} / 收 ${money(inc)}`;
+  else if (exp>0) summary = `支出 ${money(exp)}`;
+  else if (inc>0) summary = `收入 ${money(inc)}`;
   else summary = "转账等";
   return `<div class="date-divider"><span class="date-label">${formatDateLabel(dateStr)}</span><span class="date-summary">${summary}</span></div>`;
 }
@@ -228,7 +225,7 @@ function renderDateDivider(dateStr, dayRecords) {
 function groupByDate(records) {
   const groups = {};
   records.forEach(r => { if (!groups[r.date]) groups[r.date] = []; groups[r.date].push(r); });
-  return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+  return Object.entries(groups).sort((a,b) => b[0].localeCompare(a[0]));
 }
 
 function recordHtml(r) {
@@ -264,7 +261,6 @@ function renderHome() {
   $("netWorth").textContent = money(calcNetWorth());
   $("budgetText").textContent = budget ? `已用 ${money(exp)} / ${money(budget)}（${Math.round(exp/budget*100)}%）` : "尚未设置本月预算";
   $("budgetBar").style.width = budget ? `${Math.min(100,exp/budget*100)}%` : "0%";
-
   const recent = [...state.records].sort((a,b)=>(b.date+b.created).localeCompare(a.date+a.created)).slice(0,15);
   if (recent.length === 0) { $("recentRecords").innerHTML = empty("还没有账单，记下第一笔吧"); }
   else {
@@ -286,15 +282,13 @@ function renderRecords() {
 function renderStats() {
   const m = $("statsMonth").value || monthNow(), rows = monthRecords(m), inc = sum(rows,"income"), exp = sum(rows,"expense");
   $("statsIncome").textContent = money(inc); $("statsExpense").textContent = money(exp); $("statsBalance").textContent = money(inc - exp); $("statsCount").textContent = rows.length;
-
   const cats = {};
   rows.filter(r=>r.type==="expense").forEach(r => cats[r.category] = (cats[r.category]||0) + Number(r.amount));
   const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]), max = sorted[0]?.[1] || 1;
   $("categoryStats").innerHTML = sorted.length ? sorted.map(([name,val])=>`
     <div class="cat-row"><span>${getIcon(name)} ${safe(name)}</span><div class="cat-bar"><span style="width:${val/max*100}%"></span></div><span class="cat-value">${money(val)}</span></div>`).join("") : empty("本月暂无支出记录");
-
   const days = new Date(Number(m.slice(0,4)), Number(m.slice(5,7)), 0).getDate();
-  const daily = Array.from({length:days}, (_,i)=>({ day: i+1, val: rows.filter(r=>r.type==="expense" && Number(r.date.slice(8,10))===i+1).reduce((a,r)=>a+Number(r.amount),0) }));
+  const daily = Array.from({length:days}, (_,i)=>({ day:i+1, val: rows.filter(r=>r.type==="expense" && Number(r.date.slice(8,10))===i+1).reduce((a,r)=>a+Number(r.amount),0) }));
   const maxDay = Math.max(...daily.map(d=>d.val), 1);
   $("dailyStats").innerHTML = daily.map(d=>`<div class="day-column" title="${d.day}日 ${money(d.val)}"><div class="day-bar" style="height:${Math.max(d.val?4:2, d.val/maxDay*100)}%"></div><span class="day-label">${d.day%5===1 || d.day===days ? d.day : ""}</span></div>`).join("");
 }
@@ -365,7 +359,13 @@ function renderLoans() {
   }).join("") : empty("还没有借款或还款记录");
 }
 
-/* ===== 快捷还款 / 快捷收款 弹窗 ===== */
+function renderAll() {
+  renderAccountsSelect(); renderCategories(); renderHome();
+  renderRecords(); renderStats(); renderBudgetPage();
+  renderActivities(); renderLoans();
+}
+
+/* ===== 快捷还款 / 快捷收款 ===== */
 function openQuickDialog(mode, id) {
   $("quickMode").value = mode;
   $("quickId").value = id;
@@ -444,17 +444,11 @@ $("quickForm").addEventListener("submit", e => {
   toast("已记录");
 });
 
-function renderAll() {
-  renderAccountsSelect(); renderCategories(); renderHome();
-  renderRecords(); renderStats(); renderBudgetPage();
-  renderActivities(); renderLoans();
-}
-
+/* ===== 导出 / 备份 ===== */
 function download(name, content, type) {
   const blob = new Blob(["\ufeff", content], {type}); const url = URL.createObjectURL(blob), a = document.createElement("a");
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
-
 function exportJson() { download(`我的账本备份-${today()}.json`, JSON.stringify({version:2, state}, null, 2), "application/json;charset=utf-8"); }
 function exportCsv() {
   const header = ["日期","类型","分类","金额","账户","转入账户","备注"];
@@ -482,7 +476,7 @@ function checkRecurring() {
   const td = today(); let changed = false;
   state.recurring.forEach(rule => {
     while (rule.nextDate <= td) {
-      state.records.push({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), type: rule.type, amount: rule.amount, category: rule.category, accountId: rule.accountId, date: rule.nextDate, note: `[自动]${rule.note}`, created: Date.now() });
+      state.records.push({ id: uid(), type: rule.type, amount: rule.amount, category: rule.category, accountId: rule.accountId, date: rule.nextDate, note: `[自动]${rule.note}`, created: Date.now() });
       const d = new Date(rule.nextDate);
       if (rule.freq === "daily") d.setDate(d.getDate() + 1);
       if (rule.freq === "weekly") d.setDate(d.getDate() + 7);
@@ -494,26 +488,29 @@ function checkRecurring() {
   if (changed) save();
 }
 
+/* ===== 密码锁 ===== */
 let currentPin = "";
-function renderDots() { const dots = $("pinDots").children; for(let i=0; i<4; i++) dots[i].classList.toggle("filled", i < currentPin.length); }
+function renderDots() { const dots = $("pinDots").children; for(let i=0;i<4;i++) dots[i].classList.toggle("filled", i < currentPin.length); }
 function checkPinLock() { if (state.settings.pin) { $("lockScreen").classList.remove("hidden"); currentPin = ""; renderDots(); } else { $("lockScreen").classList.add("hidden"); } }
 
+/* ===== 自定义键盘 ===== */
 let calcExpr = "", calcTargetInput = null;
 function openKeypad(inputEl) { calcTargetInput = inputEl; calcExpr = inputEl.value !== "" ? inputEl.value : "0"; $("keypadExpr").textContent = calcExpr; $("customKeypad").classList.remove("hidden"); }
 function closeKeypad() {
   let finalVal = calcExpr;
-  try { if (/[+\-*/]/.test(calcExpr) || calcExpr.includes("×") || calcExpr.includes("÷")) { const safeExpr = calcExpr.replace(/×/g,"*").replace(/÷/g,"/").replace(/[^0-9+\-*/.()]/g,""); finalVal = String(eval(safeExpr)); } } catch { finalVal = calcExpr; }
+  try { if (/[+\-*/]/.test(calcExpr) || calcExpr.includes("×") || calcExpr.includes("÷")) { const se = calcExpr.replace(/×/g,"*").replace(/÷/g,"/").replace(/[^0-9+\-*/.()]/g,""); finalVal = String(eval(se)); } } catch { finalVal = calcExpr; }
   const num = Number(finalVal); calcTargetInput.value = isNaN(num) ? "" : Math.round(num*100)/100; $("customKeypad").classList.add("hidden");
 }
 
+/* ===== 页面切换 ===== */
 document.querySelectorAll(".tab,[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
 document.querySelectorAll(".type-btn").forEach(b=>b.addEventListener("click",()=>{
   if (b.dataset.cattype) return;
   document.querySelectorAll(".type-btn").forEach(x=>x.classList.toggle("active",x===b)); renderCategories();
 }));
 
-// 拦截双击放大
-document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+/* ===== 拦截双击放大 ===== */
+document.addEventListener('dblclick', e => e.preventDefault(), { passive:false });
 let lastTouchEnd = 0;
 document.addEventListener('touchend', e => {
   const now = (new Date()).getTime();
@@ -521,7 +518,7 @@ document.addEventListener('touchend', e => {
   lastTouchEnd = now;
 }, false);
 
-// 颜色、字体、字体颜色切换
+/* ===== 颜色 / 字体切换 ===== */
 if($("themeColors")) {
   $("themeColors").addEventListener("click", e => {
     const btn = e.target.closest(".theme-btn");
@@ -556,6 +553,7 @@ if($("customTextPicker")) {
   $("customTextPicker").addEventListener("change", () => save());
 }
 
+/* ===== 表单：账单 ===== */
 $("recordDate").value = today(); $("loanDate").value = today(); $("activityDate").value = today();
 $("filterMonth").value = monthNow(); $("statsMonth").value = monthNow();
 $("amount").addEventListener("focus", e => { e.target.blur(); openKeypad(e.target); });
@@ -565,30 +563,297 @@ $("recordForm").addEventListener("submit", e => {
   if (!Number.isFinite(amount) || amount <= 0) return toast("请输入大于 0 的金额");
   const accountId = $("account").value, toAccountId = $("toAccount").value;
   if (type === "transfer" && (!toAccountId || toAccountId === accountId)) return toast("请选择不同的转出和转入账户");
-  const r = { id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), type, amount: Math.round(amount*100)/100, category: type === "transfer" ? "转账" : $("category").value, accountId, date: $("recordDate").value, note: $("note").value.trim(), created: Date.now() };
+  const r = { id: uid(), type, amount: Math.round(amount*100)/100, category: type === "transfer" ? "转账" : $("category").value, accountId, date: $("recordDate").value, note: $("note").value.trim(), created: Date.now() };
   if (type === "transfer") r.toAccountId = toAccountId;
   state.records.push(r);
   const freq = $("recurringFreq").value;
   if (freq !== "none") {
-    const d = new Date(r.date); if (freq === "daily") d.setDate(d.getDate() + 1); if (freq === "weekly") d.setDate(d.getDate() + 7); if (freq === "monthly") d.setMonth(d.getMonth() + 1);
+    const d = new Date(r.date);
+    if (freq === "daily") d.setDate(d.getDate()+1);
+    if (freq === "weekly") d.setDate(d.getDate()+7);
+    if (freq === "monthly") d.setMonth(d.getMonth()+1);
     state.recurring.push({ ...r, id: "rec-"+Date.now(), freq, nextDate: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` });
   }
-  save(); $("amount").value = ""; $("note").value = ""; $("recordDate").value = today(); $("recurringFreq").value = "none"; renderAll(); toast("已保存");
+  save(); $("amount").value = ""; $("note").value = ""; $("recordDate").value = today(); $("recurringFreq").value = "none";
+  renderAll(); toast("已保存");
 });
 
+/* ===== 编辑账单 ===== */
 let editingRecordId = null;
 function openEditDialog(id) {
   const r = state.records.find(x=>x.id===id); if (!r) return;
-  editingRecordId = id; $("editId").value = id; $("editAmount").value = r.amount; $("editCategory").value = r.category; $("editAccount").value = r.accountId; $("editDate").value = r.date; $("editNote").value = r.note || ""; $("editDialog").showModal();
+  editingRecordId = id;
+  $("editId").value = id; $("editAmount").value = r.amount; $("editCategory").value = r.category;
+  $("editAccount").value = r.accountId; $("editDate").value = r.date; $("editNote").value = r.note || "";
+  $("editDialog").showModal();
 }
 $("editForm").addEventListener("submit", e => {
-  e.preventDefault(); const r = state.records.find(x=>x.id===editingRecordId); if (!r) return;
-  r.amount = Math.round(Number($("editAmount").value)*100)/100; r.category = $("editCategory").value; r.accountId = $("editAccount").value; r.date = $("editDate").value; r.note = $("editNote").value.trim();
+  e.preventDefault();
+  const r = state.records.find(x=>x.id===editingRecordId); if (!r) return;
+  r.amount = Math.round(Number($("editAmount").value)*100)/100;
+  r.category = $("editCategory").value; r.accountId = $("editAccount").value;
+  r.date = $("editDate").value; r.note = $("editNote").value.trim();
   save(); renderAll(); $("editDialog").close(); toast("已更新");
 });
 
+/* ===== 全局点击：删除 / 编辑 / 借还 / 活动 / 卡片展开切换（合并，无冲突） ===== */
 document.addEventListener("click", e => {
-  const del = e.target.closest("[data-delete]"); if (del) { const r = state.records.find(x=>x.id===del.dataset.delete); if (r && confirm(`确定删除这笔 ${money(r.amount)} 吗？`)) { state.records = state.records.filter(x=>x.id!==r.id); save(); renderAll(); toast("已删除"); } return; }
-  const edit = e.target.closest("[data-edit]"); if (edit) { openEditDialog(edit.dataset.edit); return; }
-  const actDel = e.target.closest("[data-activity-delete]"); if (actDel) { const a = state.activities.find(x=>x.id===actDel.dataset.activityDelete); if (a && confirm(`确定删除活动“${a.name}”吗？`)) { state.activities = state.activities.filter(x=>x.id!==a.id); save(); renderActivities(); toast("已删除"); } return; }
-  const ld = e.target.closest("[data-loan-delete]"); if (ld) { if (confirm("确定删除这条借还记录吗？")) { state.loans = state.loans
+  /* 1) 记录删除 */
+  const del = e.target.closest("[data-delete]");
+  if (del) {
+    const r = state.records.find(x=>x.id===del.dataset.delete);
+    if (r && confirm(`确定删除这笔 ${money(r.amount)} 吗？`)) {
+      state.records = state.records.filter(x=>x.id!==r.id);
+      save(); renderAll(); toast("已删除");
+    }
+    return;
+  }
+  /* 2) 记录编辑 */
+  const edit = e.target.closest("[data-edit]");
+  if (edit) { openEditDialog(edit.dataset.edit); return; }
+
+  /* 3) 活动删除 */
+  const actDel = e.target.closest("[data-activity-delete]");
+  if (actDel) {
+    const a = state.activities.find(x=>x.id===actDel.dataset.activityDelete);
+    if (a && confirm(`确定删除活动“${a.name}”吗？`)) {
+      state.activities = state.activities.filter(x=>x.id!==a.id);
+      save(); renderActivities(); toast("已删除");
+    }
+    return;
+  }
+  /* 4) 借还删除 */
+  const ld = e.target.closest("[data-loan-delete]");
+  if (ld) {
+    if (confirm("确定删除这条借还记录吗？")) {
+      state.loans = state.loans.filter(l=>l.id!==ld.dataset.loanDelete);
+      save(); renderLoans(); toast("已删除");
+    }
+    return;
+  }
+  /* 5) 快捷还款 */
+  const repay = e.target.closest("[data-loan-repay]");
+  if (repay) {
+    const l = state.loans.find(x=>x.id===repay.dataset.loanRepay);
+    if (!l) return;
+    if (Math.max(0, Number(l.amount) - Number(l.repaid || 0)) <= 0.001) return toast("该笔已结清");
+    openQuickDialog("loan", repay.dataset.loanRepay);
+    return;
+  }
+  /* 6) 快捷收款 */
+  const receive = e.target.closest("[data-activity-receive]");
+  if (receive) {
+    const a = state.activities.find(x=>x.id===receive.dataset.activityReceive);
+    if (!a) return;
+    const due = Number(a.total || 0) + Number(a.extra || 0);
+    if (Math.max(0, due - Number(a.received || 0)) <= 0.001) return toast("该活动已收齐");
+    openQuickDialog("activity", receive.dataset.activityReceive);
+    return;
+  }
+
+  /* 7) 卡片展开/收起（替代滑动） */
+  const item = e.target.closest(".record-item");
+  document.querySelectorAll(".swipe-wrapper.open").forEach(w => {
+    if (!item || !w.contains(item)) w.classList.remove("open");
+  });
+  if (!item) return;
+  const wrapper = item.closest(".swipe-wrapper");
+  if (wrapper) wrapper.classList.toggle("open");
+});
+
+/* ===== 搜索 / 筛选 ===== */
+$("searchRecords").addEventListener("input", renderRecords);
+$("filterMonth").addEventListener("change", renderRecords);
+$("filterType").addEventListener("change", renderRecords);
+$("statsMonth").addEventListener("change", renderStats);
+
+$("budgetForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = Number($("budgetAmount").value);
+  if (v < 0 || !Number.isFinite(v)) return toast("请输入有效预算");
+  state.budget[monthNow()] = Math.round(v*100)/100;
+  save(); renderAll(); toast("预算已保存");
+});
+
+/* ===== 活动表单 ===== */
+["activityTotal","activityPeople","activityExtra"].forEach(id => $(id).addEventListener("input", renderActivityCalc));
+renderActivityCalc();
+$("activityForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("activityName").value.trim();
+  const total = Number($("activityTotal").value);
+  const people = Number($("activityPeople").value);
+  const extra = Number($("activityExtra").value || 0);
+  if (!name) return toast("请填写活动名称");
+  if (!Number.isFinite(total) || total <= 0) return toast("请输入大于 0 的总金额");
+  if (!Number.isInteger(people) || people < 1) return toast("人数需为正整数");
+  const due = total + extra;
+  const act = { id: "act-"+Date.now(), name, date: $("activityDate").value, total: Math.round(total*100)/100, people, extra: Math.round(extra*100)/100, note: $("activityNote").value.trim(), created: Date.now(), received: 0, history: [] };
+  state.activities.push(act);
+  if ($("activityAutoRecord").checked) {
+    state.records.push({ id: uid(), type: "income", amount: Math.round(due*100)/100, category: "活动", accountId: "wechat", date: act.date, note: `[活动自动] ${name}`, created: Date.now() });
+  }
+  save();
+  $("activityName").value = ""; $("activityTotal").value = ""; $("activityPeople").value = "";
+  $("activityExtra").value = "0"; $("activityNote").value = ""; $("activityDate").value = today();
+  renderActivities(); renderActivityCalc(); renderHome(); toast("活动已添加");
+});
+
+/* ===== 借还表单 ===== */
+$("loanForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const amount = Number($("loanAmount").value);
+  if (amount <= 0) return toast("请输入有效金额");
+  const type = $("loanType").value, person = $("loanPerson").value.trim(), date = $("loanDate").value;
+  state.loans.push({ id: "l-"+Date.now(), type, person, amount: Math.round(amount*100)/100, date, note: $("loanNote").value.trim(), created: Date.now(), repaid: 0, history: [] });
+  if ($("loanAutoRecord").checked) {
+    state.records.push({ id: uid(), type: type === "lent" ? "expense" : "income", amount: Math.round(amount*100)/100, category: type === "lent" ? "借出" : "借入", accountId: "cash", date, note: `[借还自动] ${person}`, created: Date.now() });
+  }
+  save();
+  $("loanPerson").value = ""; $("loanAmount").value = ""; $("loanNote").value = "";
+  renderLoans(); renderHome(); toast("已添加借还记录");
+});
+
+/* ===== 导出绑定 ===== */
+$("exportCsv").addEventListener("click", exportCsv);
+$("exportExcel").addEventListener("click", exportExcel);
+$("exportJson").addEventListener("click", exportJson);
+$("settingsExport").addEventListener("click", exportJson);
+$("exportActivities").addEventListener("click", exportActivitiesCsv);
+$("settingsBtn").addEventListener("click", ()=>go("settings"));
+
+/* ===== 导入 JSON ===== */
+$("importJson").addEventListener("change", async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const obj = JSON.parse(await f.text());
+    if (!obj.state || !Array.isArray(obj.state.records)) throw new Error();
+    if (!confirm("恢复备份会覆盖当前数据，继续吗？")) return;
+    state = obj.state;
+    if (!state.categories) state.categories = defaultState().categories;
+    if (!Array.isArray(state.accounts) || !state.accounts.length) state.accounts = defaultState().accounts;
+    if (!state.settings) state.settings = { pin: "" };
+    if (!state.settings.themeColor) state.settings.themeColor = "blue";
+    if (!state.settings.fontFamily) state.settings.fontFamily = "default";
+    if (!state.settings.fontColor) state.settings.fontColor = "default";
+    if (!state.settings.customTheme) state.settings.customTheme = "#4a7ce0";
+    if (!state.settings.customText) state.settings.customText = "#1d2738";
+    if (!Array.isArray(state.activities)) state.activities = [];
+    if (!Array.isArray(state.loans)) state.loans = [];
+    if (!Array.isArray(state.recurring)) state.recurring = [];
+    if (!state.budget) state.budget = {};
+    save(); initFontSelect(); renderAll();
+    applyTheme(state.settings.themeColor, state.settings.customTheme);
+    applyFont(state.settings.fontFamily);
+    applyFontColor(state.settings.fontColor, state.settings.customText);
+    checkPinLock();
+    toast("恢复成功");
+  } catch { toast("恢复失败：文件格式不正确"); }
+  finally { e.target.value = ""; }
+});
+
+/* ===== 恢复历史版本 ===== */
+$("restoreBackupBtn").addEventListener("click", () => {
+  const bak = localStorage.getItem(KEY + "_backup");
+  if (!bak) return toast("没有找到历史版本");
+  if (!confirm("将恢复到上一次保存前的状态，当前改动会丢失。确定吗？")) return;
+  try {
+    state = JSON.parse(bak);
+    if (!state.settings) state.settings = { pin: "" };
+    if (!state.settings.themeColor) state.settings.themeColor = "blue";
+    if (!state.settings.fontFamily) state.settings.fontFamily = "default";
+    if (!state.settings.fontColor) state.settings.fontColor = "default";
+    if (!state.settings.customTheme) state.settings.customTheme = "#4a7ce0";
+    if (!state.settings.customText) state.settings.customText = "#1d2738";
+    if (!Array.isArray(state.activities)) state.activities = [];
+    save(); initFontSelect(); renderAll();
+    applyTheme(state.settings.themeColor, state.settings.customTheme);
+    applyFont(state.settings.fontFamily);
+    applyFontColor(state.settings.fontColor, state.settings.customText);
+    toast("已恢复历史版本");
+  } catch { toast("恢复失败"); }
+});
+
+/* ===== 清空全部 ===== */
+$("clearAll").addEventListener("click", () => {
+  if (!confirm("彻底清空所有数据？此操作不可撤销！")) return;
+  if (!confirm("建议先导出备份。仍要清空吗？")) return;
+  state = defaultState(); save(); initFontSelect(); renderAll();
+  applyTheme("blue", "#4a7ce0");
+  applyFont("default");
+  applyFontColor("default", "#1d2738");
+  go("home"); toast("已清空");
+});
+
+/* ===== 分类管理 ===== */
+let currentCatType = "expense";
+function renderCatManage() {
+  const list = state.categories[currentCatType];
+  $("catList").innerHTML = list.map((c, i) => `<div class="cat-manage-item"><span>${c.icon} ${c.name}</span><button type="button" class="mini-action delete" data-delcat="${i}">删除</button></div>`).join("");
+}
+document.querySelectorAll("#catDialog [data-cattype]").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("#catDialog [data-cattype]").forEach(x=>x.classList.toggle("active", x===b));
+  currentCatType = b.dataset.cattype; renderCatManage();
+}));
+$("manageCatsBtn").addEventListener("click", () => { renderCatManage(); $("catDialog").showModal(); });
+$("addCatBtn").addEventListener("click", () => {
+  const name = $("newCatName").value.trim(), icon = $("newCatIcon").value.trim() || "📌";
+  if (!name) return toast("请输入名称");
+  if (state.categories[currentCatType].some(c=>c.name===name)) return toast("已存在");
+  state.categories[currentCatType].push({name, icon});
+  save(); renderCatManage(); renderAll();
+  $("newCatName").value = ""; $("newCatIcon").value = "";
+});
+$("catList").addEventListener("click", e => {
+  const btn = e.target.closest("[data-delcat]"); if (!btn) return;
+  if (confirm("删除后已使用该分类的账单不会消失，但将无法选择。确定吗？")) {
+    state.categories[currentCatType].splice(Number(btn.dataset.delcat), 1);
+    save(); renderCatManage(); renderAll();
+  }
+});
+
+/* ===== 密码锁按钮 ===== */
+$("setPinBtn").addEventListener("click", () => {
+  const p = prompt("请输入新的 4 位数字密码：");
+  if (p === null) return;
+  if (!/^\d{4}$/.test(p)) return toast("必须是 4 位数字");
+  state.settings.pin = p; save(); toast("密码已设置");
+});
+$("removePinBtn").addEventListener("click", () => { state.settings.pin = ""; save(); toast("密码锁已关闭"); });
+$("pinPad").addEventListener("click", e => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  const num = btn.dataset.num;
+  if (num === "del") { currentPin = currentPin.slice(0, -1); renderDots(); }
+  else if (num === "ok") {
+    if (currentPin === state.settings.pin) $("lockScreen").classList.add("hidden");
+    else { toast("密码错误"); currentPin = ""; renderDots(); }
+  } else if (currentPin.length < 4) { currentPin += num; renderDots(); }
+});
+
+/* ===== 自定义键盘 ===== */
+$("customKeypad").addEventListener("click", e => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  if (btn.id === "keypadDone") return closeKeypad();
+  const k = btn.dataset.k;
+  if (k === "del") calcExpr = calcExpr.slice(0, -1) || "0";
+  else if (k === "clear") calcExpr = "0";
+  else if (k === "=") {
+    try { const se = calcExpr.replace(/×/g,"*").replace(/÷/g,"/").replace(/[^0-9+\-*/.()]/g,""); calcExpr = String(eval(se)); }
+    catch { toast("表达式错误"); }
+  } else {
+    if (calcExpr === "0" && !/[+\-*/.]/.test(k)) calcExpr = k;
+    else calcExpr += k;
+  }
+  $("keypadExpr").textContent = calcExpr;
+});
+
+/* ===== 初始化 ===== */
+checkRecurring();
+initFontSelect();
+renderAll();
+applyTheme(state.settings.themeColor, state.settings.customTheme);
+applyFont(state.settings.fontFamily);
+applyFontColor(state.settings.fontColor, state.settings.customText);
+checkPinLock();
+
+})();
