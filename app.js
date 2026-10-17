@@ -84,7 +84,6 @@ function calcNetWorth() {
   return accountBals + lent - borrowed;
 }
 
-// ===== 修改了日期显示格式：全部带上“周几” =====
 function formatDateLabel(dateStr) {
   const dateObj = new Date(dateStr);
   const days = ["日", "一", "二", "三", "四", "五", "六"];

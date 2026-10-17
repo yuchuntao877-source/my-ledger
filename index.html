@@ -8,7 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="我的账本">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
+<!-- 加了 ?v=2 强制手机浏览器更新 CSS -->
+<link rel="stylesheet" href="style.css?v=2">
 <title>我的账本</title>
 </head>
 <body>
@@ -279,6 +280,7 @@
 </div>
 
 <div id="toast" class="toast" role="status"></div>
-<script src="app.js"></script>
+<!-- 加了 ?v=2 强制手机浏览器更新 JS -->
+<script src="app.js?v=2"></script>
 </body>
 </html>
