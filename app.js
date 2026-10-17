@@ -61,7 +61,7 @@ function recordHtml(r){
  const sign=isTransfer?"↔":isInc?"+":"−";
  const amountClass=isTransfer?"":isInc?"income":"expense";
  const details=isTransfer?`${accountName(r.accountId)} → ${accountName(r.toAccountId)}`:`${r.date} · ${accountName(r.accountId)}${r.note?" · "+safe(r.note):""}`;
- return `<article class="record-item"><div class="record-icon">${icons[r.category]||"🧾"}</div><div class="record-main"><div class="record-name">${safe(r.category)}${r.note?` · ${safe(r.note)}`:""}</div><div class="record-meta">${safe(details)}</div></div><div class="record-right"><div class="record-amount ${amountClass}">${sign}${money(r.amount)}</div><div class="record-actions"><button class="mini-action" data-edit="${safe(r.id)}">编辑</button><button class="mini-action delete" data-delete="${safe(r.id)}">删除</button></div></div></article>`;
+ return `<article class="record-item"><div class="record-icon ${isInc?'icon-income':isTransfer?'icon-transfer':'icon-expense'}">${icons[r.category]||"🧾"}</div><div class="record-main"><div class="record-name">${safe(r.category)}${r.note?` · ${safe(r.note)}`:""}</div><div class="record-meta">${safe(details)}</div></div><div class="record-right"><div class="record-amount ${amountClass}">${sign}${money(r.amount)}</div><div class="record-actions"><button class="mini-action" data-edit="${safe(r.id)}">编辑</button><button class="mini-action delete" data-delete="${safe(r.id)}">删除</button></div></div></article>`;
 }
 function empty(msg){return `<div class="empty-state">${safe(msg)}</div>`;}
 function renderRecords(){
@@ -102,7 +102,7 @@ function activityHtml(a){
  const per=people>0?total/people:0;
  const due=total+extra;
  const perWithExtra=people>0?due/people:0;
- return `<article class="record-item"><div class="record-icon">🎯</div><div class="record-main"><div class="record-name">${safe(a.name)}</div><div class="record-meta">${safe(a.date)} · ${people} 人 · 每人 AA ${money(per)} · 额外收取 ${money(extra)}<br>应收合计 ${money(due)} · 含额外人均 ${money(perWithExtra)}${a.note?` · ${safe(a.note)}`:""}</div></div><div class="record-right"><div class="record-amount">${money(total)}</div><div class="record-actions"><button class="mini-action delete" data-activity-delete="${safe(a.id)}">删除</button></div></div></article>`;
+ return `<article class="record-item"><div class="record-icon icon-activity">🎯</div><div class="record-main"><div class="record-name">${safe(a.name)}</div><div class="record-meta">${safe(a.date)} · ${people} 人 · 每人 AA ${money(per)} · 额外收取 ${money(extra)}<br>应收合计 ${money(due)} · 含额外人均 ${money(perWithExtra)}${a.note?` · ${safe(a.note)}`:""}</div></div><div class="record-right"><div class="record-amount">${money(total)}</div><div class="record-actions"><button class="mini-action delete" data-activity-delete="${safe(a.id)}">删除</button></div></div></article>`;
 }
 function renderActivities(){
  const rows=[...state.activities].sort((a,b)=>(b.date+b.created).localeCompare(a.date+a.created));
@@ -110,7 +110,7 @@ function renderActivities(){
 }
 function renderLoans(){
  const rows=[...state.loans].sort((a,b)=>(b.date+b.created).localeCompare(a.date+a.created));
- $("loanList").innerHTML=rows.length?rows.map(l=>`<article class="record-item"><div class="record-icon">${l.type==="lent"?"↗️":"↙️"}</div><div class="record-main"><div class="record-name">${l.type==="lent"?"借给":"向"} ${safe(l.person)}</div><div class="record-meta">${safe(l.date)}${l.note?" · "+safe(l.note):""}<br>已还 ${money(l.repaid||0)} · 剩余 ${money(Math.max(0,l.amount-(l.repaid||0)))}</div></div><div class="record-right"><div class="record-amount">${money(l.amount)}</div><div class="record-actions"><button class="mini-action" data-loan-repay="${safe(l.id)}">登记还款</button><button class="mini-action delete" data-loan-delete="${safe(l.id)}">删除</button></div></div></article>`).join(""):empty("还没有借款或还款记录");
+ $("loanList").innerHTML=rows.length?rows.map(l=>`<article class="record-item"><div class="record-icon icon-loan">${l.type==="lent"?"↗️":"↙️"}</div><div class="record-main"><div class="record-name">${l.type==="lent"?"借给":"向"} ${safe(l.person)}</div><div class="record-meta">${safe(l.date)}${l.note?" · "+safe(l.note):""}<br>已还 ${money(l.repaid||0)} · 剩余 ${money(Math.max(0,l.amount-(l.repaid||0)))}</div></div><div class="record-right"><div class="record-amount">${money(l.amount)}</div><div class="record-actions"><button class="mini-action" data-loan-repay="${safe(l.id)}">登记还款</button><button class="mini-action delete" data-loan-delete="${safe(l.id)}">删除</button></div></div></article>`).join(""):empty("还没有借款或还款记录");
 }
 function renderAll(){
  renderAccountsSelect();
