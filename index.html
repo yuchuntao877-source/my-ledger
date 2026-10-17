@@ -12,6 +12,21 @@
 <title>我的账本</title>
 </head>
 <body>
+<!-- 锁屏 -->
+<div id="lockScreen" class="lock-screen hidden">
+  <div class="lock-box">
+    <h2>账本已锁定</h2>
+    <p class="muted small">请输入 4 位数字密码</p>
+    <div id="pinDots" class="pin-dots"><span></span><span></span><span></span><span></span></div>
+    <div id="pinPad" class="pin-pad">
+      <button data-num="1">1</button><button data-num="2">2</button><button data-num="3">3</button>
+      <button data-num="4">4</button><button data-num="5">5</button><button data-num="6">6</button>
+      <button data-num="7">7</button><button data-num="8">8</button><button data-num="9">9</button>
+      <button data-num="del" class="del">⌫</button><button data-num="0">0</button><button data-num="ok" class="ok">OK</button>
+    </div>
+  </div>
+</div>
+
 <div class="app-shell">
   <header class="topbar">
     <div><p class="eyebrow" id="todayLabel">YOUR MONEY, CLEARLY</p><h1>我的账本</h1></div>
@@ -20,8 +35,16 @@
 
   <section class="hero-card">
     <div class="hero-head"><span id="monthLabel">本月概览</span><span class="privacy-pill">● 私密本地账本</span></div>
-    <p class="muted light">本月结余</p>
-    <div class="balance" id="monthBalance">¥0.00</div>
+    <div class="hero-main">
+      <div>
+        <p class="muted light">本月结余</p>
+        <div class="balance" id="monthBalance">¥0.00</div>
+      </div>
+      <div class="net-asset">
+        <span>净资产</span>
+        <strong id="netWorth">¥0.00</strong>
+      </div>
+    </div>
     <div class="summary-row">
       <div><span class="summary-label">收入</span><strong class="income" id="monthIncome">¥0.00</strong></div>
       <div><span class="summary-label">支出</span><strong class="expense" id="monthExpense">¥0.00</strong></div>
@@ -48,18 +71,23 @@
       </div>
       <form id="recordForm" class="panel form-panel">
         <label class="amount-label" for="amount">金额（¥）</label>
-        <input id="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required>
+        <input id="amount" type="text" inputmode="none" placeholder="0.00" readonly required>
         <div class="form-grid">
           <label>分类<select id="category"></select></label>
           <label>账户<select id="account"></select></label>
           <label>日期<input id="recordDate" type="date" required></label>
-          <label>备注<input id="note" maxlength="100" placeholder="选填，例如：午餐"></label>
+          <label>备注<input id="note" maxlength="100" placeholder="选填"></label>
+          <label class="full-width">重复<select id="recurringFreq">
+            <option value="none">不重复</option>
+            <option value="daily">每天</option>
+            <option value="weekly">每周</option>
+            <option value="monthly">每月</option>
+          </select></label>
         </div>
         <div id="transferFields" class="form-grid hidden">
           <label>转入账户<select id="toAccount"></select></label>
         </div>
         <button class="primary-btn" type="submit" id="saveRecord">保存账单</button>
-        <p class="form-hint" id="formHint">账单只保存在当前浏览器，不会上传服务器。</p>
       </form>
 
       <div class="section-title space-top"><h2>最近账单</h2><button class="text-button" data-page="records">查看全部 ›</button></div>
@@ -77,8 +105,12 @@
       </div>
       <div id="allRecords" class="record-list"></div>
       <div class="panel export-panel">
-        <div><strong>导出你的数据</strong><p class="muted small">CSV 可用 Excel/WPS 打开；JSON 可用于完整备份与恢复。</p></div>
-        <div class="button-row"><button class="secondary-btn" id="exportCsv">导出 CSV</button><button class="secondary-btn" id="exportJson">备份 JSON</button></div>
+        <div><strong>导出你的数据</strong><p class="muted small">CSV 可用 Excel/WPS 打开；JSON 用于完整备份。</p></div>
+        <div class="button-row">
+          <button class="secondary-btn" id="exportCsv">导出 CSV</button>
+          <button class="secondary-btn" id="exportExcel">导出 Excel</button>
+          <button class="secondary-btn" id="exportJson">备份 JSON</button>
+        </div>
         <label class="secondary-btn import-btn">恢复 JSON 备份<input id="importJson" type="file" accept=".json,application/json" hidden></label>
       </div>
     </section>
@@ -114,19 +146,23 @@
         <button class="secondary-btn" id="exportActivities">导出活动 CSV</button>
       </div>
       <div class="panel">
-        <p class="muted small">记录活动总费用、参与人数和额外收取。填写总金额和人数后会自动计算每人 AA。活动记录独立保存，不自动计入日常收支；实际付款时可在“概览”另记一笔支出。</p>
+        <p class="muted small">记录活动费用，自动计算 AA。可勾选自动记入日常账单。</p>
         <form id="activityForm" class="form-grid">
           <label class="full-width">活动名称<input id="activityName" maxlength="40" placeholder="例如：周末聚餐" required></label>
           <label>日期<input id="activityDate" type="date" required></label>
           <label>总金额（¥）<input id="activityTotal" type="number" min="0.01" step="0.01" required></label>
           <label>参与人数<input id="activityPeople" type="number" min="1" step="1" required></label>
           <label>额外收取（总额 ¥）<input id="activityExtra" type="number" min="0" step="0.01" value="0"></label>
-          <label class="full-width">备注<input id="activityNote" maxlength="100" placeholder="选填，例如：场地费、多收补公摊"></label>
+          <label class="full-width">备注<input id="activityNote" maxlength="100" placeholder="选填"></label>
           <div class="activity-calc full-width" id="activityCalc">
             <div><span>每人 AA</span><strong id="activityPerPerson">¥0.00</strong></div>
             <div><span>应收合计</span><strong id="activityDue">¥0.00</strong></div>
             <div><span>含额外人均</span><strong id="activityPerWithExtra">¥0.00</strong></div>
           </div>
+          <label class="checkbox-label full-width">
+            <input type="checkbox" id="activityAutoRecord" checked>
+            <span>自动将应收合计记入日常账单（收入）</span>
+          </label>
           <button class="primary-btn full-width" type="submit">添加活动记录</button>
         </form>
       </div>
@@ -136,13 +172,17 @@
     <section class="page" id="page-loans">
       <div class="section-title"><h2>借款与还款</h2></div>
       <div class="panel">
-        <p class="muted small">记录借出/借入以及归还。此处是独立的往来记录，不会自动改变日常收支；实际收到或付出现金时，请另记一笔收支。</p>
+        <p class="muted small">记录借出/借入及归还。可勾选自动生成日常收支。</p>
         <form id="loanForm" class="form-grid">
           <label>类型<select id="loanType"><option value="lent">借给别人</option><option value="borrowed">向别人借</option></select></label>
           <label>姓名/对象<input id="loanPerson" maxlength="40" placeholder="例如：朋友" required></label>
           <label>金额（¥）<input id="loanAmount" type="number" min="0.01" step="0.01" required></label>
           <label>日期<input id="loanDate" type="date" required></label>
           <label class="full-width">备注<input id="loanNote" maxlength="100" placeholder="可不填"></label>
+          <label class="checkbox-label full-width">
+            <input type="checkbox" id="loanAutoRecord" checked>
+            <span>自动生成对应的日常收支账单</span>
+          </label>
           <button class="primary-btn full-width" type="submit">添加借还记录</button>
         </form>
       </div>
@@ -151,19 +191,93 @@
 
     <section class="page" id="page-settings">
       <div class="section-title"><h2>设置与数据</h2></div>
+      
       <div class="panel">
-        <h3>数据存储说明</h3>
-        <p class="muted">数据保存在这台设备、这个浏览器的网站存储中。清除网站数据、换浏览器或更换手机都可能导致数据无法访问，请定期导出 JSON 备份。</p>
-        <button class="secondary-btn" id="settingsExport">立即备份 JSON</button>
+        <h3>分类管理</h3>
+        <p class="muted small">自定义你的收支分类和图标。</p>
+        <button class="secondary-btn" id="manageCatsBtn" style="width:100%">管理分类</button>
       </div>
+
+      <div class="panel">
+        <h3>应用锁与备份</h3>
+        <p class="muted small">数据保存在本地，为了隐私可开启密码锁。</p>
+        <div class="button-row">
+          <button class="secondary-btn" id="setPinBtn">设置/修改密码锁</button>
+          <button class="secondary-btn" id="removePinBtn">关闭密码锁</button>
+        </div>
+        <button class="secondary-btn" id="restoreBackupBtn" style="width:100%;margin-top:10px">恢复上一次历史版本</button>
+      </div>
+
+      <div class="panel">
+        <h3>数据备份</h3>
+        <p class="muted small">换设备前请先导出 JSON 备份。</p>
+        <button class="secondary-btn" id="settingsExport" style="width:100%">立即备份 JSON</button>
+      </div>
+
       <div class="panel danger-panel">
-        <h3>清空账本</h3><p class="muted">此操作会删除本机保存的全部账单、预算、借还记录、活动记录，并恢复默认账户，无法撤销。请先备份。</p>
+        <h3>清空账本</h3><p class="muted">此操作将清除所有数据，无法撤销。</p>
         <button class="danger-btn" id="clearAll">清空全部数据</button>
       </div>
     </section>
   </main>
   <footer>我的账本 · 轻量、私密、好上手</footer>
 </div>
+
+<!-- 编辑账单弹窗 -->
+<dialog id="editDialog" class="app-dialog">
+  <form method="dialog" id="editForm">
+    <h3>编辑账单</h3>
+    <input type="hidden" id="editId">
+    <div class="form-grid">
+      <label>金额<input type="number" id="editAmount" step="0.01" required></label>
+      <label>分类<select id="editCategory"></select></label>
+      <label>账户<select id="editAccount"></select></label>
+      <label>日期<input type="date" id="editDate" required></label>
+      <label class="full-width">备注<input type="text" id="editNote"></label>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="secondary-btn" onclick="document.getElementById('editDialog').close()">取消</button>
+      <button type="submit" class="primary-btn" style="margin-top:0">保存修改</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 分类管理弹窗 -->
+<dialog id="catDialog" class="app-dialog">
+  <div id="catManageContent">
+    <h3>分类管理</h3>
+    <div class="type-switch" style="margin-bottom:10px">
+      <button type="button" class="type-btn active" data-cattype="expense">支出</button>
+      <button type="button" class="type-btn" data-cattype="income">收入</button>
+    </div>
+    <div id="catList" class="cat-manage-list"></div>
+    <div class="form-grid" style="margin-top:10px; background:#f8fafc; padding:10px; border-radius:12px">
+      <label>名称<input type="text" id="newCatName" placeholder="例如：宠物"></label>
+      <label>图标<input type="text" id="newCatIcon" placeholder="🐶" maxlength="2"></label>
+      <button type="button" class="secondary-btn full-width" id="addCatBtn">添加分类</button>
+    </div>
+    <div class="dialog-actions" style="margin-top:15px">
+      <button type="button" class="primary-btn" onclick="document.getElementById('catDialog').close()">完成</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- 自定义计算器键盘 -->
+<div id="customKeypad" class="custom-keypad hidden">
+  <div class="keypad-header">
+    <span id="keypadExpr">0</span>
+    <button type="button" class="keypad-done" id="keypadDone">完成</button>
+  </div>
+  <div class="keypad-grid">
+    <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button><button type="button" data-k="del" class="key-del">⌫</button>
+    <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button><button type="button" data-k="+" class="key-op">+</button>
+    <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button><button type="button" data-k="-" class="key-op">-</button>
+    <button type="button" data-k=".">.</button><button type="button" data-k="0">0</button><button type="button" data-k="=" class="key-eq">=</button><button type="button" data-k="*" class="key-op">×</button>
+    <button type="button" data-k="clear" class="key-clear">清空</button>
+    <button type="button" data-k="/" class="key-op">÷</button>
+  </div>
+</div>
+
 <div id="toast" class="toast" role="status"></div>
 <script src="app.js"></script>
 </body>

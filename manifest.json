@@ -1,11 +1,11 @@
 {
   "name": "我的账本",
   "short_name": "我的账本",
-  "description": "轻量、私密的个人记账工具，支持活动 AA 费用记录",
+  "description": "轻量、私密的个人记账工具，支持自定义分类、周期记账、密码锁与活动AA",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f7fb",
-  "theme_color": "#f4f7fb",
+  "theme_color": "#4a7ce0",
   "lang": "zh-CN"
 }
