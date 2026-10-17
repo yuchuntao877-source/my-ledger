@@ -75,7 +75,6 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .form-panel { padding: 20px; }
 .amount-label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 7px; font-weight: 500; }
 
-/* 强制锁定金额框的样式 */
 #amount { border: 0 !important; border-bottom: 1px solid var(--line) !important; border-radius: 0 !important; font-size: 38px !important; font-weight: 780 !important; letter-spacing: -.9px !important; padding: 0 0 13px !important; margin-bottom: 21px !important; width: 100% !important; color: var(--ink) !important; outline: none !important; background: transparent !important; transition: .2s !important; box-shadow: none !important; }
 #amount:focus { border-bottom-color: var(--c-primary) !important; }
 #amount::placeholder { color: #cbd3e0 !important; }
@@ -106,7 +105,6 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .more-btn { border: 0; background: transparent; color: var(--muted); font-size: 20px; font-weight: 800; padding: 0 5px; line-height: 1; display: grid; place-items: center; border-radius: 6px; }
 .more-btn:active { background: var(--line); }
 
-/* 底部操作菜单 */
 .action-dialog { padding: 0; border: none; background: transparent; box-shadow: none; width: 90%; max-width: 400px; margin: auto auto 20px auto; }
 .action-dialog::backdrop { background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); }
 .action-menu { background: var(--card); border-radius: 18px; overflow: hidden; width: 100%; border: 1px solid var(--line); }
@@ -163,8 +161,18 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .repay-history { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .repay-history span { font-size: 9px; background: #f0f4fc; color: var(--muted); padding: 2px 7px; border-radius: 6px; font-variant-numeric: tabular-nums; }
 
-.cat-manage-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; padding-right: 5px; }
+.cat-manage-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 5px; }
 .cat-manage-item { display: flex; justify-content: space-between; align-items: center; background: var(--bg); padding: 10px 14px; border-radius: 12px; font-size: 13px; }
+
+/* Emoji 选择器 */
+.emoji-picker-container { margin: 10px 0; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.emoji-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--line); background: #f8fafc; }
+.emoji-tabs::-webkit-scrollbar { display: none; }
+.emoji-tab { padding: 8px 12px; font-size: 12px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.emoji-tab.active { color: var(--c-primary); font-weight: bold; border-bottom: 2px solid var(--c-primary); }
+.emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 5px; padding: 10px; max-height: 160px; overflow-y: auto; }
+.emoji-grid span { font-size: 22px; text-align: center; cursor: pointer; padding: 4px; border-radius: 8px; user-select: none; }
+.emoji-grid span:active { background: var(--bg); }
 
 .toast { position: fixed; left: 50%; bottom: calc(23px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: #202b3d; color: #fff; border-radius: 14px; padding: 12px 18px; font-size: 12px; box-shadow: 0 8px 30px rgba(20,33,59,0.2); transition: .25s; z-index: 30; max-width: 90vw; text-align: center; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }

@@ -1,6 +1,6 @@
 (() => {
 "use strict";
-const KEY = "my-ledger-v1";
+const KEY = "my-ledger-v2"; // 升级存储键，强制拉新默认配置
 const $ = id => document.getElementById(id);
 const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
 const monthNow = () => today().slice(0,7);
@@ -10,9 +10,15 @@ const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() +
 
 const defaultState = () => ({
   records:[], loans:[], activities:[], budget:{}, recurring:[],
-  accounts:[
-    {id:"cash",name:"现金",initial:0},{id:"wechat",name:"微信",initial:0},
-    {id:"alipay",name:"支付宝",initial:0},{id:"bank",name:"银行卡",initial:0}
+  accounts: [
+    {id:"wechat", name:"微信", initial:0},
+    {id:"meituan", name:"美团", initial:0},
+    {id:"douyin", name:"抖音", initial:0},
+    {id:"xianyu", name:"闲鱼", initial:0},
+    {id:"jd", name:"京东", initial:0},
+    {id:"pdd", name:"拼多多", initial:0},
+    {id:"taobao", name:"淘宝", initial:0},
+    {id:"cash", name:"现金", initial:0}
   ],
   categories: {
     expense: ["餐饮","交通","购物","居家","住房","医疗","娱乐","学习","人情","旅行","通讯","其他"].map(n=>({name:n, icon:getDefaultIcon(n)})),
@@ -227,7 +233,6 @@ function groupByDate(records) {
   return Object.entries(groups).sort((a,b) => b[0].localeCompare(a[0]));
 }
 
-/* 彻底移除了滑动，改为 ⋮ 按钮 */
 function recordHtml(r) {
   const isInc = r.type === "income", isTransfer = r.type === "transfer";
   const sign = isTransfer ? "↔" : isInc ? "+" : "−";
@@ -438,7 +443,7 @@ function download(name, content, type) {
   const blob = new Blob(["\ufeff", content], {type}); const url = URL.createObjectURL(blob), a = document.createElement("a");
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
-function exportJson() { download(`我的账本备份-${today()}.json`, JSON.stringify({version:2, state}, null, 2), "application/json;charset=utf-8"); }
+function exportJson() { download(`我的账本备份-${today()}.json`, JSON.stringify({version:3, state}, null, 2), "application/json;charset=utf-8"); }
 function exportCsv() {
   const header = ["日期","类型","分类","金额","账户","转入账户","备注"];
   const rows = state.records.map(r => [r.date,{expense:"支出",income:"收入",transfer:"转账"}[r.type]||r.type,r.category,r.amount,accountName(r.accountId),r.toAccountId?accountName(r.toAccountId):"",r.note||""]);
@@ -591,15 +596,9 @@ $("editForm").addEventListener("submit", e => {
 });
 
 document.addEventListener("click", e => {
-  /* 全局触发操作菜单（⋮） */
   const more = e.target.closest("[data-more]");
-  if (more) {
-    actionRecordId = more.dataset.more;
-    $("actionDialog").showModal();
-    return;
-  }
+  if (more) { actionRecordId = more.dataset.more; $("actionDialog").showModal(); return; }
 
-  /* 活动删除 */
   const actDel = e.target.closest("[data-activity-delete]");
   if (actDel) {
     const a = state.activities.find(x=>x.id===actDel.dataset.activityDelete);
@@ -609,7 +608,6 @@ document.addEventListener("click", e => {
     }
     return;
   }
-  /* 借还删除 */
   const ld = e.target.closest("[data-loan-delete]");
   if (ld) {
     if (confirm("确定删除这条借还记录吗？")) {
@@ -618,7 +616,6 @@ document.addEventListener("click", e => {
     }
     return;
   }
-  /* 快捷还款 */
   const repay = e.target.closest("[data-loan-repay]");
   if (repay) {
     const l = state.loans.find(x=>x.id===repay.dataset.loanRepay);
@@ -627,7 +624,6 @@ document.addEventListener("click", e => {
     openQuickDialog("loan", repay.dataset.loanRepay);
     return;
   }
-  /* 快捷收款 */
   const receive = e.target.closest("[data-activity-receive]");
   if (receive) {
     const a = state.activities.find(x=>x.id===receive.dataset.activityReceive);
@@ -756,7 +752,65 @@ $("clearAll").addEventListener("click", () => {
   go("home"); toast("已清空");
 });
 
+/* ===== 账户管理 ===== */
+function renderAccountManage() {
+  $("accountList").innerHTML = state.accounts.map((a, i) => `
+    <div class="cat-manage-item">
+      <span>${safe(a.name)}</span>
+      <button type="button" class="mini-action delete" data-delaccount="${i}">删除</button>
+    </div>`).join("");
+}
+$("manageAccountsBtn").addEventListener("click", () => { renderAccountManage(); $("accountDialog").showModal(); });
+$("addAccountBtn").addEventListener("click", () => {
+  const name = $("newAccountName").value.trim();
+  if (!name) return toast("请输入账户名称");
+  if (state.accounts.some(a => a.name === name)) return toast("该账户已存在");
+  state.accounts.push({ id: "acc-" + Date.now(), name, initial: 0 });
+  save(); renderAccountManage(); renderAll();
+  $("newAccountName").value = "";
+  toast("账户已添加");
+});
+$("accountList").addEventListener("click", e => {
+  const btn = e.target.closest("[data-delaccount]"); if (!btn) return;
+  const idx = Number(btn.dataset.delaccount);
+  const acc = state.accounts[idx];
+  if (state.accounts.length <= 1) return toast("至少保留一个账户");
+  const used = state.records.some(r => r.accountId === acc.id || r.toAccountId === acc.id);
+  if (used) return toast("该账户下已有账单记录，无法删除！");
+  if (confirm(`确定删除账户“${acc.name}”吗？`)) {
+    state.accounts.splice(idx, 1);
+    save(); renderAccountManage(); renderAll();
+  }
+});
+
+/* ===== 分类管理 & 图标选择器 ===== */
 let currentCatType = "expense";
+const EMOJIS = {
+  food: ["🍜","🍚","🍔","🍕","🍣","🍰","🍺","☕","🍎","🍉","🥩","🍤","🥗","🍦","🍩","🧋","🥘","🍛","🍝"],
+  traffic: ["🚗","🚕","🚌","🚇","🚄","✈️","🚢","🚲","🛵","⛽","🅿️","🚦"],
+  shopping: ["🛍️","👗","👟","💄","💍","👜","🧸","📱","💻","⌚","🎁","🧴","📦"],
+  life: ["🏠","💡","🚰","🛋️","🧹","🧺","💊","🏥","🏫","💈","🛁","🔑"],
+  fun: ["🎮","🎬","🎤","🎧","🎳","🎯","🎲","🎸","🎨","⚽","🏀","🏋️","🏕️","🏖️"],
+  work: ["💼","💰","💳","📈","🏦","🧑‍💻","📚","✏️","📁","⏰","📅"],
+  other: ["📌","❤️","🔥","✨","🎉","🧧","↩️","💸","🤝","↔️","🧾","💡","🔔"]
+};
+
+function renderEmojiGrid(type = "food") {
+  $("emojiGrid").innerHTML = EMOJIS[type].map(e => `<span>${e}</span>`).join("");
+}
+$("emojiGrid").addEventListener("click", e => {
+  if (e.target.tagName === "SPAN") {
+    $("newCatIcon").value = e.target.textContent;
+  }
+});
+document.querySelectorAll(".emoji-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".emoji-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    renderEmojiGrid(tab.dataset.etype);
+  });
+});
+
 function renderCatManage() {
   const list = state.categories[currentCatType];
   $("catList").innerHTML = list.map((c, i) => `<div class="cat-manage-item"><span>${c.icon} ${c.name}</span><button type="button" class="mini-action delete" data-delcat="${i}">删除</button></div>`).join("");
@@ -765,7 +819,11 @@ document.querySelectorAll("#catDialog [data-cattype]").forEach(b => b.addEventLi
   document.querySelectorAll("#catDialog [data-cattype]").forEach(x=>x.classList.toggle("active", x===b));
   currentCatType = b.dataset.cattype; renderCatManage();
 }));
-$("manageCatsBtn").addEventListener("click", () => { renderCatManage(); $("catDialog").showModal(); });
+$("manageCatsBtn").addEventListener("click", () => { 
+  renderCatManage(); 
+  $("catDialog").showModal(); 
+  renderEmojiGrid("food");
+});
 $("addCatBtn").addEventListener("click", () => {
   const name = $("newCatName").value.trim(), icon = $("newCatIcon").value.trim() || "📌";
   if (!name) return toast("请输入名称");

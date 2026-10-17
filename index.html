@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="我的账本">
 <link rel="manifest" href="manifest.json">
-<!-- 强制刷新缓存 v=9 -->
-<link rel="stylesheet" href="style.css?v=9">
+<!-- 强制刷新缓存 v=10 -->
+<link rel="stylesheet" href="style.css?v=10">
 <title>我的账本</title>
 </head>
 <body>
@@ -245,8 +245,14 @@
       </div>
 
       <div class="panel">
+        <h3>账户管理</h3>
+        <p class="muted small">自定义你的资金来源账户（如各平台钱包、银行卡等）。</p>
+        <button class="secondary-btn" id="manageAccountsBtn" style="width:100%">管理账户</button>
+      </div>
+
+      <div class="panel">
         <h3>分类管理</h3>
-        <p class="muted small">自定义你的收支分类和图标。</p>
+        <p class="muted small">自定义你的收支分类和图标，内置几百种图标可选。</p>
         <button class="secondary-btn" id="manageCatsBtn" style="width:100%">管理分类</button>
       </div>
 
@@ -302,6 +308,22 @@
   </form>
 </dialog>
 
+<!-- 账户管理弹窗 -->
+<dialog id="accountDialog" class="app-dialog">
+  <div id="accountManageContent">
+    <h3>账户管理</h3>
+    <div id="accountList" class="cat-manage-list"></div>
+    <div class="form-grid" style="margin-top:10px; background:#f8fafc; padding:10px; border-radius:12px">
+      <label class="full-width">新账户名称<input type="text" id="newAccountName" placeholder="例如：招商银行卡" maxlength="10"></label>
+      <button type="button" class="secondary-btn full-width" id="addAccountBtn">添加账户</button>
+    </div>
+    <div class="dialog-actions" style="margin-top:15px">
+      <button type="button" class="primary-btn" onclick="document.getElementById('accountDialog').close()">完成</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- 分类管理弹窗 -->
 <dialog id="catDialog" class="app-dialog">
   <div id="catManageContent">
     <h3>分类管理</h3>
@@ -310,9 +332,23 @@
       <button type="button" class="type-btn" data-cattype="income">收入</button>
     </div>
     <div id="catList" class="cat-manage-list"></div>
+    
     <div class="form-grid" style="margin-top:10px; background:#f8fafc; padding:10px; border-radius:12px">
-      <label>名称<input type="text" id="newCatName" placeholder="例如：宠物"></label>
-      <label>图标<input type="text" id="newCatIcon" placeholder="🐶" maxlength="2"></label>
+      <label>名称<input type="text" id="newCatName" placeholder="例如：宠物" maxlength="10"></label>
+      <label>图标<input type="text" id="newCatIcon" placeholder="点击或手填" maxlength="4"></label>
+      <!-- 图标选择面板 -->
+      <div class="full-width emoji-picker-container">
+        <div class="emoji-tabs">
+          <span class="emoji-tab active" data-etype="food">吃喝</span>
+          <span class="emoji-tab" data-etype="traffic">出行</span>
+          <span class="emoji-tab" data-etype="shopping">购物</span>
+          <span class="emoji-tab" data-etype="life">生活</span>
+          <span class="emoji-tab" data-etype="fun">娱乐</span>
+          <span class="emoji-tab" data-etype="work">工作</span>
+          <span class="emoji-tab" data-etype="other">其他</span>
+        </div>
+        <div class="emoji-grid" id="emojiGrid"></div>
+      </div>
       <button type="button" class="secondary-btn full-width" id="addCatBtn">添加分类</button>
     </div>
     <div class="dialog-actions" style="margin-top:15px">
@@ -358,7 +394,7 @@
 </dialog>
 
 <div id="toast" class="toast" role="status"></div>
-<!-- 强制刷新缓存 v=9 -->
-<script src="app.js?v=9"></script>
+<!-- 强制刷新缓存 v=10 -->
+<script src="app.js?v=10"></script>
 </body>
 </html>
