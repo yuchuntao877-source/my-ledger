@@ -193,14 +193,23 @@ footer { text-align: center; color: var(--muted); font-size: 10px; padding: 24px
 .pin-pad button:active { background: var(--line); }
 .pin-pad .del, .pin-pad .ok { font-size: 16px; background: transparent; border-color: transparent; }
 
-.custom-keypad { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); z-index: 50; border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); animation: slideUp .3s ease; }
+/* ======= 计算器极速响应优化 ======= */
+.custom-keypad { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); z-index: 50; border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); animation: slideUp .15s ease-out; }
 @keyframes slideUp { from{transform: translateY(100%)} to{transform: translateY(0)} }
 .keypad-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--line); }
 #keypadExpr { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .keypad-done { background: var(--c-primary); color: #fff; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 600; }
 .keypad-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); padding: 1px; }
-.keypad-grid button { border: none; background: var(--card); padding: 20px 0; font-size: 20px; font-weight: 500; color: var(--ink); }
-.keypad-grid button:active { background: var(--bg); }
+.keypad-grid button { 
+  border: none; background: var(--card); padding: 20px 0; font-size: 20px; font-weight: 500; color: var(--ink); 
+  /* 防卡顿、防选中、防高亮核心属性 */
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.05s, background 0.05s;
+}
+.keypad-grid button:active { background: var(--bg); transform: scale(0.95); }
 .keypad-grid .key-op { background: #f0f4fc; color: var(--c-primary); font-weight: 700; }
 .keypad-grid .key-del { color: var(--red); }
 .keypad-grid .key-eq { background: var(--c-primary); color: #fff; }

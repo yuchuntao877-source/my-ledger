@@ -544,7 +544,12 @@ if($("customTextPicker")) {
 
 $("recordDate").value = today(); $("loanDate").value = today(); $("activityDate").value = today();
 $("filterMonth").value = monthNow(); $("statsMonth").value = monthNow();
-$("amount").addEventListener("focus", e => { e.target.blur(); openKeypad(e.target); });
+
+// 改用 pointerdown 极速响应金额输入，避免系统键盘打架和 300ms 延迟
+$("amount").addEventListener("pointerdown", e => { 
+  e.preventDefault(); 
+  openKeypad(e.target); 
+});
 
 $("recordForm").addEventListener("submit", e => {
   e.preventDefault(); const type = document.querySelector(".type-btn.active").dataset.type; const amount = Number($("amount").value);
@@ -857,8 +862,11 @@ $("pinPad").addEventListener("click", e => {
   } else if (currentPin.length < 4) { currentPin += num; renderDots(); }
 });
 
-$("customKeypad").addEventListener("click", e => {
+// 改用 pointerdown 极速响应计算器面板，彻底告别延迟
+$("customKeypad").addEventListener("pointerdown", e => {
   const btn = e.target.closest("button"); if (!btn) return;
+  e.preventDefault(); // 阻止浏览器二次处理，保证点击瞬间响应
+  
   if (btn.id === "keypadDone") return closeKeypad();
   const k = btn.dataset.k;
   if (k === "del") calcExpr = calcExpr.slice(0, -1) || "0";
