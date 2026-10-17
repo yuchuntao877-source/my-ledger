@@ -17,7 +17,7 @@ const defaultState = () => ({
     expense: ["餐饮","交通","购物","居家","住房","医疗","娱乐","学习","人情","旅行","通讯","其他"].map(n=>({name:n, icon:getDefaultIcon(n)})),
     income: ["工资","奖金","兼职","投资收益","红包","退款","其他收入"].map(n=>({name:n, icon:getDefaultIcon(n)}))
   },
-  settings: { pin: "" }
+  settings: { pin: "", themeColor: "blue" }
 });
 
 function getDefaultIcon(name) {
@@ -35,6 +35,12 @@ if (!state.budget || typeof state.budget !== "object") state.budget = {};
 if (!Array.isArray(state.accounts) || !state.accounts.length) state.accounts = defaultState().accounts;
 if (!state.categories) state.categories = defaultState().categories;
 if (!state.settings) state.settings = { pin: "" };
+if (!state.settings.themeColor) state.settings.themeColor = "blue";
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.color === theme));
+}
 
 function backupState() { try { localStorage.setItem(KEY + "_backup", localStorage.getItem(KEY) || ""); } catch(e){} }
 function save(){ backupState(); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){ toast("保存失败"); } }
@@ -88,14 +94,11 @@ function formatDateLabel(dateStr) {
   const dateObj = new Date(dateStr);
   const days = ["日", "一", "二", "三", "四", "五", "六"];
   const week = `周${days[dateObj.getDay()]}`;
-  
   const td = today();
   const d = new Date(td); d.setDate(d.getDate() - 1);
   const yd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-  
   if (dateStr === td) return `今天 ${week}`;
   if (dateStr === yd) return `昨天 ${week}`;
-  
   return `${dateStr.replace(/-/g, "/")} ${week}`;
 }
 
@@ -110,21 +113,12 @@ function renderDateDivider(dateStr, dayRecords) {
   else if (exp > 0) summary = `支出 ${money(exp)}`;
   else if (inc > 0) summary = `收入 ${money(inc)}`;
   else summary = "转账等";
-
-  return `
-    <div class="date-divider">
-      <span class="date-label">${formatDateLabel(dateStr)}</span>
-      <span class="date-summary">${summary}</span>
-    </div>
-  `;
+  return `<div class="date-divider"><span class="date-label">${formatDateLabel(dateStr)}</span><span class="date-summary">${summary}</span></div>`;
 }
 
 function groupByDate(records) {
   const groups = {};
-  records.forEach(r => {
-    if (!groups[r.date]) groups[r.date] = [];
-    groups[r.date].push(r);
-  });
+  records.forEach(r => { if (!groups[r.date]) groups[r.date] = []; groups[r.date].push(r); });
   return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
 }
 
@@ -139,13 +133,8 @@ function recordHtml(r) {
     <div class="swipe-content">
       <article class="record-item">
         <div class="record-icon ${isInc?'icon-income':isTransfer?'icon-transfer':'icon-expense'}">${icon}</div>
-        <div class="record-main">
-          <div class="record-name">${safe(r.category)}${r.note?` · ${safe(r.note)}`:""}</div>
-          <div class="record-meta">${safe(details)}</div>
-        </div>
-        <div class="record-right">
-          <div class="record-amount ${amountClass}">${sign}${money(r.amount)}</div>
-        </div>
+        <div class="record-main"><div class="record-name">${safe(r.category)}${r.note?` · ${safe(r.note)}`:""}</div><div class="record-meta">${safe(details)}</div></div>
+        <div class="record-right"><div class="record-amount ${amountClass}">${sign}${money(r.amount)}</div></div>
       </article>
     </div>
     <div class="swipe-actions">
@@ -162,68 +151,43 @@ function sum(rows,type){ return rows.filter(r=>r.type===type).reduce((a,r)=>a+Nu
 function renderHome() {
   const m = monthNow(), rows = monthRecords(m), inc = sum(rows,"income"), exp = sum(rows,"expense"), budget = Number(state.budget[m]||0);
   $("monthLabel").textContent = `${m.replace("-","年")}月概览`;
-  $("monthBalance").textContent = money(inc - exp);
-  $("monthIncome").textContent = money(inc);
-  $("monthExpense").textContent = money(exp);
+  $("monthBalance").textContent = money(inc - exp); $("monthIncome").textContent = money(inc); $("monthExpense").textContent = money(exp);
   $("netWorth").textContent = money(calcNetWorth());
   $("budgetText").textContent = budget ? `已用 ${money(exp)} / ${money(budget)}（${Math.round(exp/budget*100)}%）` : "尚未设置本月预算";
   $("budgetBar").style.width = budget ? `${Math.min(100,exp/budget*100)}%` : "0%";
 
   const recent = [...state.records].sort((a,b)=>(b.date+b.created).localeCompare(a.date+a.created)).slice(0,15);
-  if (recent.length === 0) {
-    $("recentRecords").innerHTML = empty("还没有账单，记下第一笔吧");
-  } else {
+  if (recent.length === 0) { $("recentRecords").innerHTML = empty("还没有账单，记下第一笔吧"); }
+  else {
     const grouped = groupByDate(recent);
-    $("recentRecords").innerHTML = grouped.map(([date, dayRows]) => {
-      return renderDateDivider(date, dayRows) + `<div class="record-list">` + dayRows.map(recordHtml).join("") + `</div>`;
-    }).join("");
+    $("recentRecords").innerHTML = grouped.map(([date, dayRows]) => renderDateDivider(date, dayRows) + `<div class="record-list">` + dayRows.map(recordHtml).join("") + `</div>`).join("");
   }
 }
 
 function renderRecords() {
   const q = $("searchRecords").value.trim().toLowerCase(), m = $("filterMonth").value, type = $("filterType").value;
-  const rows = [...state.records].filter(r =>
-    (!m || r.date.startsWith(m)) && (type === "all" || r.type === type) &&
-    (!q || [r.note, r.category, accountName(r.accountId)].join(" ").toLowerCase().includes(q))
-  ).sort((a,b)=>(b.date+b.created).localeCompare(a.date+a.created));
-  
-  if (rows.length === 0) {
-    $("allRecords").innerHTML = empty("没有找到符合条件的账单");
-  } else {
+  const rows = [...state.records].filter(r => (!m || r.date.startsWith(m)) && (type === "all" || r.type === type) && (!q || [r.note, r.category, accountName(r.accountId)].join(" ").toLowerCase().includes(q))).sort((a,b)=>(b.date+b.created).localeCompare(a.date+a.created));
+  if (rows.length === 0) { $("allRecords").innerHTML = empty("没有找到符合条件的账单"); }
+  else {
     const grouped = groupByDate(rows);
-    $("allRecords").innerHTML = grouped.map(([date, dayRows]) => {
-      return renderDateDivider(date, dayRows) + `<div class="record-list">` + dayRows.map(recordHtml).join("") + `</div>`;
-    }).join("");
+    $("allRecords").innerHTML = grouped.map(([date, dayRows]) => renderDateDivider(date, dayRows) + `<div class="record-list">` + dayRows.map(recordHtml).join("") + `</div>`).join("");
   }
 }
 
 function renderStats() {
   const m = $("statsMonth").value || monthNow(), rows = monthRecords(m), inc = sum(rows,"income"), exp = sum(rows,"expense");
-  $("statsIncome").textContent = money(inc); $("statsExpense").textContent = money(exp);
-  $("statsBalance").textContent = money(inc - exp); $("statsCount").textContent = rows.length;
+  $("statsIncome").textContent = money(inc); $("statsExpense").textContent = money(exp); $("statsBalance").textContent = money(inc - exp); $("statsCount").textContent = rows.length;
 
   const cats = {};
   rows.filter(r=>r.type==="expense").forEach(r => cats[r.category] = (cats[r.category]||0) + Number(r.amount));
   const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]), max = sorted[0]?.[1] || 1;
-  
   $("categoryStats").innerHTML = sorted.length ? sorted.map(([name,val])=>`
-    <div class="cat-row">
-      <span>${getIcon(name)} ${safe(name)}</span>
-      <div class="cat-bar"><span style="width:${val/max*100}%"></span></div>
-      <span class="cat-value">${money(val)}</span>
-    </div>`).join("") : empty("本月暂无支出记录");
+    <div class="cat-row"><span>${getIcon(name)} ${safe(name)}</span><div class="cat-bar"><span style="width:${val/max*100}%"></span></div><span class="cat-value">${money(val)}</span></div>`).join("") : empty("本月暂无支出记录");
 
   const days = new Date(Number(m.slice(0,4)), Number(m.slice(5,7)), 0).getDate();
-  const daily = Array.from({length:days}, (_,i)=>({
-    day: i+1,
-    val: rows.filter(r=>r.type==="expense" && Number(r.date.slice(8,10))===i+1).reduce((a,r)=>a+Number(r.amount),0)
-  }));
+  const daily = Array.from({length:days}, (_,i)=>({ day: i+1, val: rows.filter(r=>r.type==="expense" && Number(r.date.slice(8,10))===i+1).reduce((a,r)=>a+Number(r.amount),0) }));
   const maxDay = Math.max(...daily.map(d=>d.val), 1);
-  $("dailyStats").innerHTML = daily.map(d=>`
-    <div class="day-column" title="${d.day}日 ${money(d.val)}">
-      <div class="day-bar" style="height:${Math.max(d.val?4:2, d.val/maxDay*100)}%"></div>
-      <span class="day-label">${d.day%5===1 || d.day===days ? d.day : ""}</span>
-    </div>`).join("");
+  $("dailyStats").innerHTML = daily.map(d=>`<div class="day-column" title="${d.day}日 ${money(d.val)}"><div class="day-bar" style="height:${Math.max(d.val?4:2, d.val/maxDay*100)}%"></div><span class="day-label">${d.day%5===1 || d.day===days ? d.day : ""}</span></div>`).join("");
 }
 
 function renderBudgetPage() {
@@ -233,15 +197,9 @@ function renderBudgetPage() {
 }
 
 function renderActivityCalc() {
-  const total = Number($("activityTotal").value || 0);
-  const people = Number($("activityPeople").value || 0);
-  const extra = Number($("activityExtra").value || 0);
-  const per = people > 0 ? total / people : 0;
-  const due = total + extra;
-  const perWithExtra = people > 0 ? due / people : 0;
-  $("activityPerPerson").textContent = money(per);
-  $("activityDue").textContent = money(due);
-  $("activityPerWithExtra").textContent = money(perWithExtra);
+  const total = Number($("activityTotal").value || 0), people = Number($("activityPeople").value || 0), extra = Number($("activityExtra").value || 0);
+  const per = people > 0 ? total / people : 0, due = total + extra, perWithExtra = people > 0 ? due / people : 0;
+  $("activityPerPerson").textContent = money(per); $("activityDue").textContent = money(due); $("activityPerWithExtra").textContent = money(perWithExtra);
 }
 
 function activityHtml(a) {
@@ -249,15 +207,8 @@ function activityHtml(a) {
   const per = people>0 ? total/people : 0, due = total + extra, perWithExtra = people>0 ? due/people : 0;
   return `<article class="record-item">
     <div class="record-icon icon-activity">🎯</div>
-    <div class="record-main">
-      <div class="record-name">${safe(a.name)}</div>
-      <div class="record-meta">${safe(a.date)} · ${people} 人 · 每人 ${money(per)} · 额外收 ${money(extra)}<br>
-      应收合计 ${money(due)} · 含额外人均 ${money(perWithExtra)}${a.note?` · ${safe(a.note)}`:""}</div>
-    </div>
-    <div class="record-right">
-      <div class="record-amount">${money(total)}</div>
-      <div class="record-actions"><button class="mini-action delete" data-activity-delete="${safe(a.id)}">删除</button></div>
-    </div>
+    <div class="record-main"><div class="record-name">${safe(a.name)}</div><div class="record-meta">${safe(a.date)} · ${people} 人 · 每人 ${money(per)} · 额外收 ${money(extra)}<br>应收合计 ${money(due)} · 含额外人均 ${money(perWithExtra)}${a.note?` · ${safe(a.note)}`:""}</div></div>
+    <div class="record-right"><div class="record-amount">${money(total)}</div><div class="record-actions"><button class="mini-action delete" data-activity-delete="${safe(a.id)}">删除</button></div></div>
   </article>`;
 }
 
@@ -271,18 +222,8 @@ function renderLoans() {
   $("loanList").innerHTML = rows.length ? rows.map(l=>`
     <article class="record-item">
       <div class="record-icon icon-loan">${l.type==="lent"?"↗️":"↙️"}</div>
-      <div class="record-main">
-        <div class="record-name">${l.type==="lent"?"借给":"向"} ${safe(l.person)}</div>
-        <div class="record-meta">${safe(l.date)}${l.note?" · "+safe(l.note):""}<br>
-        已还 ${money(l.repaid||0)} · 剩余 ${money(Math.max(0, l.amount-(l.repaid||0)))}</div>
-      </div>
-      <div class="record-right">
-        <div class="record-amount">${money(l.amount)}</div>
-        <div class="record-actions">
-          <button class="mini-action" data-loan-repay="${safe(l.id)}">登记还款</button>
-          <button class="mini-action delete" data-loan-delete="${safe(l.id)}">删除</button>
-        </div>
-      </div>
+      <div class="record-main"><div class="record-name">${l.type==="lent"?"借给":"向"} ${safe(l.person)}</div><div class="record-meta">${safe(l.date)}${l.note?" · "+safe(l.note):""}<br>已还 ${money(l.repaid||0)} · 剩余 ${money(Math.max(0, l.amount-(l.repaid||0)))}</div></div>
+      <div class="record-right"><div class="record-amount">${money(l.amount)}</div><div class="record-actions"><button class="mini-action" data-loan-repay="${safe(l.id)}">登记还款</button><button class="mini-action delete" data-loan-delete="${safe(l.id)}">删除</button></div></div>
     </article>`).join("") : empty("还没有借款或还款记录");
 }
 
@@ -293,8 +234,7 @@ function renderAll() {
 }
 
 function download(name, content, type) {
-  const blob = new Blob(["\ufeff", content], {type});
-  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  const blob = new Blob(["\ufeff", content], {type}); const url = URL.createObjectURL(blob), a = document.createElement("a");
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 
@@ -307,9 +247,7 @@ function exportCsv() {
 function exportExcel() {
   let html = '<html><head><meta charset="utf-8"></head><body><table border="1">';
   html += '<tr><th>日期</th><th>类型</th><th>分类</th><th>金额</th><th>账户</th><th>备注</th></tr>';
-  state.records.forEach(r => {
-    html += `<tr><td>${r.date}</td><td>${{expense:"支出",income:"收入",transfer:"转账"}[r.type]||r.type}</td><td>${r.category}</td><td>${r.amount}</td><td>${accountName(r.accountId)}</td><td>${r.note||""}</td></tr>`;
-  });
+  state.records.forEach(r => { html += `<tr><td>${r.date}</td><td>${{expense:"支出",income:"收入",transfer:"转账"}[r.type]||r.type}</td><td>${r.category}</td><td>${r.amount}</td><td>${accountName(r.accountId)}</td><td>${r.note||""}</td></tr>`; });
   html += '</table></body></html>';
   download(`我的账单-${today()}.xls`, html, "application/vnd.ms-excel;charset=utf-8");
 }
@@ -327,11 +265,7 @@ function checkRecurring() {
   const td = today(); let changed = false;
   state.recurring.forEach(rule => {
     while (rule.nextDate <= td) {
-      state.records.push({
-        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
-        type: rule.type, amount: rule.amount, category: rule.category,
-        accountId: rule.accountId, date: rule.nextDate, note: `[自动]${rule.note}`, created: Date.now()
-      });
+      state.records.push({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), type: rule.type, amount: rule.amount, category: rule.category, accountId: rule.accountId, date: rule.nextDate, note: `[自动]${rule.note}`, created: Date.now() });
       const d = new Date(rule.nextDate);
       if (rule.freq === "daily") d.setDate(d.getDate() + 1);
       if (rule.freq === "weekly") d.setDate(d.getDate() + 7);
@@ -352,43 +286,38 @@ function openKeypad(inputEl) { calcTargetInput = inputEl; calcExpr = inputEl.val
 function closeKeypad() {
   let finalVal = calcExpr;
   try { if (/[+\-*/]/.test(calcExpr) || calcExpr.includes("×") || calcExpr.includes("÷")) { const safeExpr = calcExpr.replace(/×/g,"*").replace(/÷/g,"/").replace(/[^0-9+\-*/.()]/g,""); finalVal = String(eval(safeExpr)); } } catch { finalVal = calcExpr; }
-  const num = Number(finalVal);
-  calcTargetInput.value = isNaN(num) ? "" : Math.round(num*100)/100;
-  $("customKeypad").classList.add("hidden");
+  const num = Number(finalVal); calcTargetInput.value = isNaN(num) ? "" : Math.round(num*100)/100; $("customKeypad").classList.add("hidden");
 }
 
 document.querySelectorAll(".tab,[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
 document.querySelectorAll(".type-btn").forEach(b=>b.addEventListener("click",()=>{
   if (b.dataset.cattype) return;
-  document.querySelectorAll(".type-btn").forEach(x=>x.classList.toggle("active",x===b));
-  renderCategories();
+  document.querySelectorAll(".type-btn").forEach(x=>x.classList.toggle("active",x===b)); renderCategories();
 }));
+
+// 颜色切换逻辑
+$("themeColors").addEventListener("click", e => {
+  const btn = e.target.closest(".theme-btn");
+  if (btn) {
+    state.settings.themeColor = btn.dataset.color; save(); applyTheme(btn.dataset.color);
+  }
+});
 
 $("recordDate").value = today(); $("loanDate").value = today(); $("activityDate").value = today();
 $("filterMonth").value = monthNow(); $("statsMonth").value = monthNow();
 $("amount").addEventListener("focus", e => { e.target.blur(); openKeypad(e.target); });
 
 $("recordForm").addEventListener("submit", e => {
-  e.preventDefault();
-  const type = document.querySelector(".type-btn.active").dataset.type;
-  const amount = Number($("amount").value);
+  e.preventDefault(); const type = document.querySelector(".type-btn.active").dataset.type; const amount = Number($("amount").value);
   if (!Number.isFinite(amount) || amount <= 0) return toast("请输入大于 0 的金额");
   const accountId = $("account").value, toAccountId = $("toAccount").value;
   if (type === "transfer" && (!toAccountId || toAccountId === accountId)) return toast("请选择不同的转出和转入账户");
-  const r = {
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
-    type, amount: Math.round(amount*100)/100, category: type === "transfer" ? "转账" : $("category").value,
-    accountId, date: $("recordDate").value, note: $("note").value.trim(), created: Date.now()
-  };
+  const r = { id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), type, amount: Math.round(amount*100)/100, category: type === "transfer" ? "转账" : $("category").value, accountId, date: $("recordDate").value, note: $("note").value.trim(), created: Date.now() };
   if (type === "transfer") r.toAccountId = toAccountId;
   state.records.push(r);
-
   const freq = $("recurringFreq").value;
   if (freq !== "none") {
-    const d = new Date(r.date);
-    if (freq === "daily") d.setDate(d.getDate() + 1);
-    if (freq === "weekly") d.setDate(d.getDate() + 7);
-    if (freq === "monthly") d.setMonth(d.getMonth() + 1);
+    const d = new Date(r.date); if (freq === "daily") d.setDate(d.getDate() + 1); if (freq === "weekly") d.setDate(d.getDate() + 7); if (freq === "monthly") d.setMonth(d.getMonth() + 1);
     state.recurring.push({ ...r, id: "rec-"+Date.now(), freq, nextDate: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` });
   }
   save(); $("amount").value = ""; $("note").value = ""; $("recordDate").value = today(); $("recurringFreq").value = "none"; renderAll(); toast("已保存");
@@ -442,11 +371,11 @@ $("exportCsv").addEventListener("click", exportCsv); $("exportExcel").addEventLi
 
 $("importJson").addEventListener("change", async e => {
   const f = e.target.files[0]; if (!f) return;
-  try { const obj = JSON.parse(await f.text()); if (!obj.state || !Array.isArray(obj.state.records)) throw new Error(); if (!confirm("恢复备份会覆盖当前数据，继续吗？")) return; state = obj.state; if (!state.categories) state.categories = defaultState().categories; if (!state.accounts.length) state.accounts = defaultState().accounts; if (!state.settings) state.settings = {pin:""}; save(); renderAll(); checkPinLock(); toast("恢复成功"); } catch { toast("恢复失败：文件格式不正确"); } finally { e.target.value = ""; }
+  try { const obj = JSON.parse(await f.text()); if (!obj.state || !Array.isArray(obj.state.records)) throw new Error(); if (!confirm("恢复备份会覆盖当前数据，继续吗？")) return; state = obj.state; if (!state.categories) state.categories = defaultState().categories; if (!state.accounts.length) state.accounts = defaultState().accounts; if (!state.settings) state.settings = {pin:""}; if (!state.settings.themeColor) state.settings.themeColor = "blue"; save(); renderAll(); applyTheme(state.settings.themeColor); checkPinLock(); toast("恢复成功"); } catch { toast("恢复失败：文件格式不正确"); } finally { e.target.value = ""; }
 });
 
-$("restoreBackupBtn").addEventListener("click", () => { const bak = localStorage.getItem(KEY + "_backup"); if (!bak) return toast("没有找到历史版本"); if (confirm("将恢复到上一次保存前的状态，当前改动会丢失。确定吗？")) { try { state = JSON.parse(bak); save(); renderAll(); toast("已恢复历史版本"); } catch { toast("恢复失败"); } } });
-$("clearAll").addEventListener("click", () => { if (confirm("彻底清空所有数据？此操作不可撤销！")) { if (confirm("建议先导出备份。仍要清空吗？")) { state = defaultState(); save(); renderAll(); go("home"); toast("已清空"); } } });
+$("restoreBackupBtn").addEventListener("click", () => { const bak = localStorage.getItem(KEY + "_backup"); if (!bak) return toast("没有找到历史版本"); if (confirm("将恢复到上一次保存前的状态，当前改动会丢失。确定吗？")) { try { state = JSON.parse(bak); if (!state.settings.themeColor) state.settings.themeColor = "blue"; save(); renderAll(); applyTheme(state.settings.themeColor); toast("已恢复历史版本"); } catch { toast("恢复失败"); } } });
+$("clearAll").addEventListener("click", () => { if (confirm("彻底清空所有数据？此操作不可撤销！")) { if (confirm("建议先导出备份。仍要清空吗？")) { state = defaultState(); save(); renderAll(); applyTheme("blue"); go("home"); toast("已清空"); } } });
 
 let currentCatType = "expense";
 function renderCatManage() { const list = state.categories[currentCatType]; $("catList").innerHTML = list.map((c, i) => `<div class="cat-manage-item"><span>${c.icon} ${c.name}</span><button type="button" class="mini-action delete" data-delcat="${i}">删除</button></div>`).join(""); }
@@ -470,5 +399,6 @@ $("customKeypad").addEventListener("click", e => {
 
 checkRecurring();
 renderAll();
+applyTheme(state.settings.themeColor); // 初始化主题
 checkPinLock();
 })();
