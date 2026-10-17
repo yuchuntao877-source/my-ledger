@@ -86,6 +86,14 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .section-title h3 { font-size: 15px; margin: 0; font-weight: 730; }
 .small { font-size: 11px; } .muted { color: var(--muted); }
 
+/* ================= 新增：日期分割线样式 ================= */
+.date-divider { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px 6px; margin-top: 6px; }
+.date-divider:first-child { margin-top: 0; }
+.date-label { font-size: 12px; font-weight: 800; color: var(--ink); background: var(--bg); padding: 4px 10px; border-radius: 8px; letter-spacing: 0.5px; }
+.date-summary { font-size: 11px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (prefers-color-scheme: dark) { .date-label { background: #2d3340; } }
+/* ======================================================== */
+
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow); transition: .3s; }
 .form-panel { padding: 20px; }
 .amount-label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 7px; font-weight: 500; }

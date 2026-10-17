@@ -105,6 +105,53 @@ function calcNetWorth() {
   return accountBals + lent - borrowed;
 }
 
+// 格式化日期显示
+function formatDateLabel(dateStr) {
+  const td = today();
+  const d = new Date(td); d.setDate(d.getDate() - 1);
+  const yd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  
+  if (dateStr === td) return "今天";
+  if (dateStr === yd) return "昨天";
+  
+  const dateObj = new Date(dateStr);
+  const days = ["日", "一", "二", "三", "四", "五", "六"];
+  const week = "周" + days[dateObj.getDay()];
+  return `${dateStr.replace(/-/g, "/")} ${week}`;
+}
+
+// 生成日期分割头（带当日收支汇总）
+function renderDateDivider(dateStr, dayRecords) {
+  let inc = 0, exp = 0;
+  dayRecords.forEach(r => {
+    if(r.type === "income") inc += Number(r.amount);
+    if(r.type === "expense") exp += Number(r.amount);
+  });
+  
+  let summary = "";
+  if (inc > 0 && exp > 0) summary = `支 ${money(exp)} / 收 ${money(inc)}`;
+  else if (exp > 0) summary = `支出 ${money(exp)}`;
+  else if (inc > 0) summary = `收入 ${money(inc)}`;
+  else summary = "转账等";
+
+  return `
+    <div class="date-divider">
+      <span class="date-label">${formatDateLabel(dateStr)}</span>
+      <span class="date-summary">${summary}</span>
+    </div>
+  `;
+}
+
+// 将数组按日期分组
+function groupByDate(records) {
+  const groups = {};
+  records.forEach(r => {
+    if (!groups[r.date]) groups[r.date] = [];
+    groups[r.date].push(r);
+  });
+  return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+}
+
 function renderHome() {
   const m = monthNow(), rows = monthRecords(m), inc = sum(rows,"income"), exp = sum(rows,"expense"), budget = Number(state.budget[m]||0);
   $("monthLabel").textContent = `${m.replace("-","年")}月概览`;
@@ -117,15 +164,21 @@ function renderHome() {
   $("budgetBar").style.width = budget ? `${Math.min(100,exp/budget*100)}%` : "0%";
 
   const recent = [...state.records].sort((a,b)=>(b.date+b.created).localeCompare(a.date+a.created)).slice(0,5);
-  $("recentRecords").innerHTML = recent.length ? recent.map(recordHtml).join("") : empty("还没有账单，记下第一笔吧");
+  if (recent.length === 0) {
+    $("recentRecords").innerHTML = empty("还没有账单，记下第一笔吧");
+  } else {
+    const grouped = groupByDate(recent);
+    $("recentRecords").innerHTML = grouped.map(([date, dayRows]) => {
+      return renderDateDivider(date, dayRows) + `<div class="record-list">` + dayRows.map(recordHtml).join("") + `</div>`;
+    }).join("");
+  }
 }
 
-// 列表条目增加滑动结构
 function recordHtml(r) {
   const isInc = r.type === "income", isTransfer = r.type === "transfer";
   const sign = isTransfer ? "↔" : isInc ? "+" : "−";
   const amountClass = isTransfer ? "" : isInc ? "income" : "expense";
-  const details = isTransfer ? `${accountName(r.accountId)} → ${accountName(r.toAccountId)}` : `${r.date} · ${accountName(r.accountId)}${r.note ? " · " + safe(r.note) : ""}`;
+  const details = isTransfer ? `${accountName(r.accountId)} → ${accountName(r.toAccountId)}` : `${accountName(r.accountId)}${r.note ? " · " + safe(r.note) : ""}`;
   const icon = getIcon(r.category);
   
   return `
@@ -150,7 +203,6 @@ function recordHtml(r) {
 }
 
 function empty(msg){ return `<div class="empty-state">${safe(msg)}</div>`; }
-
 function monthRecords(m){ return state.records.filter(r=>r.date.startsWith(m)); }
 function sum(rows,type){ return rows.filter(r=>r.type===type).reduce((a,r)=>a+Number(r.amount),0); }
 
@@ -161,7 +213,14 @@ function renderRecords() {
     (!q || [r.note, r.category, accountName(r.accountId)].join(" ").toLowerCase().includes(q))
   ).sort((a,b)=>(b.date+b.created).localeCompare(a.date+a.created));
   
-  $("allRecords").innerHTML = rows.length ? rows.map(recordHtml).join("") : empty("没有找到符合条件的账单");
+  if (rows.length === 0) {
+    $("allRecords").innerHTML = empty("没有找到符合条件的账单");
+  } else {
+    const grouped = groupByDate(rows);
+    $("allRecords").innerHTML = grouped.map(([date, dayRows]) => {
+      return renderDateDivider(date, dayRows) + `<div class="record-list">` + dayRows.map(recordHtml).join("") + `</div>`;
+    }).join("");
+  }
 }
 
 function renderStats() {
@@ -306,7 +365,6 @@ function checkRecurring() {
         type: rule.type, amount: rule.amount, category: rule.category,
         accountId: rule.accountId, date: rule.nextDate, note: `[自动]${rule.note}`, created: Date.now()
       });
-      // 计算下一个日期
       const d = new Date(rule.nextDate);
       if (rule.freq === "daily") d.setDate(d.getDate() + 1);
       if (rule.freq === "weekly") d.setDate(d.getDate() + 7);
@@ -358,7 +416,7 @@ function closeKeypad() {
 // ====== 事件绑定 ======
 document.querySelectorAll(".tab,[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
 document.querySelectorAll(".type-btn").forEach(b=>b.addEventListener("click",()=>{
-  if (b.dataset.cattype) return; // 分类管理里的tab
+  if (b.dataset.cattype) return;
   document.querySelectorAll(".type-btn").forEach(x=>x.classList.toggle("active",x===b));
   renderCategories();
 }));
@@ -369,7 +427,6 @@ $("activityDate").value = today();
 $("filterMonth").value = monthNow();
 $("statsMonth").value = monthNow();
 
-// 键盘拦截
 $("amount").addEventListener("focus", e => { e.target.blur(); openKeypad(e.target); });
 
 $("recordForm").addEventListener("submit", e => {
@@ -389,7 +446,6 @@ $("recordForm").addEventListener("submit", e => {
   if (type === "transfer") r.toAccountId = toAccountId;
   state.records.push(r);
 
-  // 周期处理
   const freq = $("recurringFreq").value;
   if (freq !== "none") {
     const d = new Date(r.date);
@@ -404,7 +460,6 @@ $("recordForm").addEventListener("submit", e => {
   renderAll(); toast("已保存");
 });
 
-// 编辑账单逻辑
 let editingRecordId = null;
 function openEditDialog(id) {
   const r = state.records.find(x=>x.id===id);
@@ -425,7 +480,6 @@ $("editForm").addEventListener("submit", e => {
   save(); renderAll(); $("editDialog").close(); toast("已更新");
 });
 
-// 滑动操作事件委托
 document.addEventListener("click", e => {
   const del = e.target.closest("[data-delete]");
   if (del) {
@@ -470,7 +524,6 @@ document.addEventListener("click", e => {
   }
 });
 
-// 搜索与过滤
 $("searchRecords").addEventListener("input", renderRecords);
 $("filterMonth").addEventListener("change", renderRecords);
 $("filterType").addEventListener("change", renderRecords);
@@ -484,7 +537,6 @@ $("budgetForm").addEventListener("submit", e => {
   save(); renderAll(); toast("预算已保存");
 });
 
-// 活动费用计算与添加
 ["activityTotal","activityPeople","activityExtra"].forEach(id => $(id).addEventListener("input", renderActivityCalc));
 renderActivityCalc();
 
@@ -506,12 +558,11 @@ $("activityForm").addEventListener("submit", e => {
   };
   state.activities.push(act);
 
-  // 自动记账
   if ($("activityAutoRecord").checked) {
     state.records.push({
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
       type: "income", amount: Math.round(due*100)/100,
-      category: "活动", accountId: "wechat", // 默认记入微信或第一个账户
+      category: "活动", accountId: "wechat",
       date: act.date, note: `[活动自动] ${name}`, created: Date.now()
     });
   }
@@ -522,7 +573,6 @@ $("activityForm").addEventListener("submit", e => {
   renderActivities(); renderActivityCalc(); renderHome(); toast("活动已添加");
 });
 
-// 借还添加与自动记账
 $("loanForm").addEventListener("submit", e => {
   e.preventDefault();
   const amount = Number($("loanAmount").value);
@@ -541,7 +591,7 @@ $("loanForm").addEventListener("submit", e => {
       type: type === "lent" ? "expense" : "income",
       amount: Math.round(amount*100)/100,
       category: type === "lent" ? "借出" : "借入",
-      accountId: "cash", // 默认现金账户
+      accountId: "cash",
       date, note: `[借还自动] ${person}`, created: Date.now()
     });
   }
@@ -551,7 +601,6 @@ $("loanForm").addEventListener("submit", e => {
   renderLoans(); renderHome(); toast("已添加借还记录");
 });
 
-// 设置页功能
 $("exportCsv").addEventListener("click", exportCsv);
 $("exportExcel").addEventListener("click", exportExcel);
 $("exportJson").addEventListener("click", exportJson);
@@ -566,7 +615,6 @@ $("importJson").addEventListener("change", async e => {
     if (!obj.state || !Array.isArray(obj.state.records)) throw new Error();
     if (!confirm("恢复备份会覆盖当前数据，继续吗？")) return;
     state = obj.state;
-    // 兼容补全
     if (!state.categories) state.categories = defaultState().categories;
     if (!state.accounts.length) state.accounts = defaultState().accounts;
     if (!state.settings) state.settings = {pin:""};
@@ -593,7 +641,6 @@ $("clearAll").addEventListener("click", () => {
   }
 });
 
-// 分类管理
 let currentCatType = "expense";
 function renderCatManage() {
   const list = state.categories[currentCatType];
@@ -627,7 +674,6 @@ $("catList").addEventListener("click", e => {
   }
 });
 
-// 密码锁
 $("setPinBtn").addEventListener("click", () => {
   const p = prompt("请输入新的 4 位数字密码：");
   if (p === null) return;
@@ -647,7 +693,6 @@ $("pinPad").addEventListener("click", e => {
   } else if (currentPin.length < 4) { currentPin += num; renderDots(); }
 });
 
-// 自定义键盘事件
 $("customKeypad").addEventListener("click", e => {
   const btn = e.target.closest("button"); if (!btn) return;
   if (btn.id === "keypadDone") return closeKeypad();
@@ -666,7 +711,6 @@ $("customKeypad").addEventListener("click", e => {
   $("keypadExpr").textContent = calcExpr;
 });
 
-// 启动
 checkRecurring();
 renderAll();
 checkPinLock();
