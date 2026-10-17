@@ -8,12 +8,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="我的账本">
 <link rel="manifest" href="manifest.json">
-<!-- 加了 ?v=2 强制手机浏览器更新 CSS -->
-<link rel="stylesheet" href="style.css?v=2">
+<!-- 强制刷新版本号 v3 -->
+<link rel="stylesheet" href="style.css?v=3">
 <title>我的账本</title>
 </head>
 <body>
-<!-- 锁屏 -->
 <div id="lockScreen" class="lock-screen hidden">
   <div class="lock-box">
     <h2>账本已锁定</h2>
@@ -224,7 +223,6 @@
   <footer>我的账本 · 轻量、私密、好上手</footer>
 </div>
 
-<!-- 编辑账单弹窗 -->
 <dialog id="editDialog" class="app-dialog">
   <form method="dialog" id="editForm">
     <h3>编辑账单</h3>
@@ -243,7 +241,6 @@
   </form>
 </dialog>
 
-<!-- 分类管理弹窗 -->
 <dialog id="catDialog" class="app-dialog">
   <div id="catManageContent">
     <h3>分类管理</h3>
@@ -263,24 +260,23 @@
   </div>
 </dialog>
 
-<!-- 自定义计算器键盘 -->
+<!-- 计算器键盘：数字已按 1-9 顺序排列 -->
 <div id="customKeypad" class="custom-keypad hidden">
   <div class="keypad-header">
     <span id="keypadExpr">0</span>
     <button type="button" class="keypad-done" id="keypadDone">完成</button>
   </div>
   <div class="keypad-grid">
-    <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button><button type="button" data-k="del" class="key-del">⌫</button>
+    <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button><button type="button" data-k="del" class="key-del">⌫</button>
     <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button><button type="button" data-k="+" class="key-op">+</button>
-    <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button><button type="button" data-k="-" class="key-op">-</button>
+    <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button><button type="button" data-k="-" class="key-op">-</button>
     <button type="button" data-k=".">.</button><button type="button" data-k="0">0</button><button type="button" data-k="=" class="key-eq">=</button><button type="button" data-k="*" class="key-op">×</button>
-    <button type="button" data-k="clear" class="key-clear">清空</button>
-    <button type="button" data-k="/" class="key-op">÷</button>
+    <button type="button" data-k="clear" class="key-clear" style="grid-column: span 2;">清空</button>
+    <button type="button" data-k="/" class="key-op" style="grid-column: span 2;">÷</button>
   </div>
 </div>
 
 <div id="toast" class="toast" role="status"></div>
-<!-- 加了 ?v=2 强制手机浏览器更新 JS -->
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
