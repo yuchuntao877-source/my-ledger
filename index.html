@@ -1,400 +1,695 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-mode="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="color-scheme" content="light">
-<meta name="theme-color" content="#f4f7fb">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f3f5fa" id="metaTheme">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="我的账本">
 <link rel="manifest" href="manifest.json">
-<!-- 强制刷新缓存 v=11 -->
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css?v=23">
 <title>我的账本</title>
 </head>
 <body>
+
+<!-- ============ 锁屏 ============ -->
 <div id="lockScreen" class="lock-screen hidden">
   <div class="lock-box">
+    <div class="lock-icon">🔒</div>
     <h2>账本已锁定</h2>
-    <p class="muted small">请输入 4 位数字密码</p>
+    <p class="muted small" id="lockSub">请输入 4 位数字密码</p>
     <div id="pinDots" class="pin-dots"><span></span><span></span><span></span><span></span></div>
     <div id="pinPad" class="pin-pad">
-      <button data-num="1">1</button><button data-num="2">2</button><button data-num="3">3</button>
-      <button data-num="4">4</button><button data-num="5">5</button><button data-num="6">6</button>
-      <button data-num="7">7</button><button data-num="8">8</button><button data-num="9">9</button>
-      <button data-num="del" class="del">⌫</button><button data-num="0">0</button><button data-num="ok" class="ok">OK</button>
+      <button type="button" data-num="1">1</button><button type="button" data-num="2">2</button><button type="button" data-num="3">3</button>
+      <button type="button" data-num="4">4</button><button type="button" data-num="5">5</button><button type="button" data-num="6">6</button>
+      <button type="button" data-num="7">7</button><button type="button" data-num="8">8</button><button type="button" data-num="9">9</button>
+      <button type="button" data-num="del" class="fn">⌫</button><button type="button" data-num="0">0</button><button type="button" data-num="ok" class="fn">OK</button>
     </div>
+    <p class="lock-hint">数据只保存在这台设备的浏览器里。<br>忘记密码将无法找回，只能清空数据。</p>
   </div>
 </div>
 
 <div class="app-shell">
   <header class="topbar">
-    <div><p class="eyebrow" id="todayLabel">YOUR MONEY, CLEARLY</p><h1>我的账本</h1></div>
-    <button class="icon-button" id="settingsBtn" aria-label="设置">⚙</button>
+    <div>
+      <p class="greeting" id="greeting">你好</p>
+      <h1>我的账本<span class="today-chip" id="todayChip">—</span></h1>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="privacyBtn" aria-label="隐藏金额" title="隐藏金额">👁</button>
+      <button class="icon-btn" id="settingsBtn" aria-label="设置" title="设置">⚙</button>
+    </div>
   </header>
 
-  <section class="hero-card">
-    <div class="hero-head"><span id="monthLabel">本月概览</span><span class="privacy-pill">● 私密本地账本</span></div>
+  <section class="hero" id="heroCard">
+    <div class="hero-top">
+      <span class="hero-month" id="monthLabel">本月概览</span>
+      <span class="hero-pill">● 本地账本</span>
+    </div>
     <div class="hero-main">
-      <div>
-        <p class="muted light">本月结余</p>
-        <div class="balance" id="monthBalance">¥0.00</div>
-      </div>
-      <div class="net-asset">
-        <span>净资产</span>
-        <strong id="netWorth">¥0.00</strong>
+      <p class="hero-caption">本月支出</p>
+      <div class="hero-balance" id="monthExpenseBig"><span class="cur">¥</span><span class="num">0.00</span></div>
+    </div>
+    <div class="hero-grid">
+      <div class="hero-cell"><span>本月收入</span><strong id="monthIncome">¥0.00</strong></div>
+      <div class="hero-cell"><span>本月结余</span><strong id="monthBalance">¥0.00</strong></div>
+    </div>
+    <div class="hero-budget">
+      <div class="budget-track" id="budgetTrack"><div id="budgetBar"></div></div>
+      <div class="budget-info">
+        <span id="budgetText">尚未设置本月预算</span>
+        <button class="link" data-go="budget">设置预算 ›</button>
       </div>
     </div>
-    <div class="summary-row">
-      <div><span class="summary-label">收入</span><strong class="income" id="monthIncome">¥0.00</strong></div>
-      <div><span class="summary-label">支出</span><strong class="expense" id="monthExpense">¥0.00</strong></div>
-    </div>
-    <div class="budget-track"><div id="budgetBar"></div></div>
-    <div class="budget-caption"><span id="budgetText">尚未设置本月预算</span><button class="text-button light" data-page="budget">设置预算 ›</button></div>
   </section>
 
-  <nav class="tabs" aria-label="主要页面">
-    <button class="tab active" data-page="home">概览</button>
-    <button class="tab" data-page="records">明细</button>
-    <button class="tab" data-page="stats">统计</button>
-    <button class="tab" data-page="activities">活动</button>
-    <button class="tab" data-page="loans">借还</button>
+  <nav class="tabs" id="tabs" aria-label="主要页面">
+    <span class="nav-pill" id="navPill" aria-hidden="true"></span>
+    <button class="tab active" data-page="home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.6 12 3.5l8.5 7.1V20a1.5 1.5 0 0 1-1.5 1.5h-4.3v-6.3H9.3v6.3H5A1.5 1.5 0 0 1 3.5 20z"/></svg>
+      <span>概览</span>
+    </button>
+    <button class="tab" data-page="records">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 6.5H21M8.5 12H21M8.5 17.5H21"/><circle cx="4" cy="6.5" r="1.3"/><circle cx="4" cy="12" r="1.3"/><circle cx="4" cy="17.5" r="1.3"/></svg>
+      <span>明细</span>
+    </button>
+    <button class="tab" data-page="stats">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20.2h18"/><rect x="4.6" y="11" width="3.6" height="9.2" rx="1.4"/><rect x="10.2" y="4.6" width="3.6" height="15.6" rx="1.4"/><rect x="15.8" y="14" width="3.6" height="6.2" rx="1.4"/></svg>
+      <span>统计</span>
+    </button>
+    <button class="tab" data-page="activities">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 5.3a3.1 3.1 0 0 1 0 5.5"/><path d="M17.6 14.5c2.1.6 3.4 2.2 3.4 4.3"/></svg>
+      <span>活动</span>
+    </button>
+    <button class="tab" data-page="loans">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13.5l-3.2-3.2"/><path d="M20 16H6.5l3.2 3.2"/></svg>
+      <span>借还</span>
+    </button>
   </nav>
 
   <main>
+    <!-- ============ 概览 ============ -->
     <section class="page active" id="page-home">
-      <div class="section-title"><h2>记一笔</h2><span class="muted small">简单记下每一笔</span></div>
-      <div class="type-switch">
-        <button class="type-btn active" data-type="expense">支出</button>
-        <button class="type-btn" data-type="income">收入</button>
-        <button class="type-btn" data-type="transfer">转账</button>
-      </div>
-      <form id="recordForm" class="panel form-panel">
-        <label class="amount-label" for="amount">金额（¥）</label>
-        <input id="amount" type="text" inputmode="none" placeholder="0.00" readonly required>
-        <div class="form-grid">
-          <label>分类<select id="category"></select></label>
-          <label>账户<select id="account"></select></label>
-          <label>日期<input id="recordDate" type="date" required></label>
-          <label>备注<input id="note" maxlength="100" placeholder="选填"></label>
-          <label class="full-width">重复<select id="recurringFreq">
-            <option value="none">不重复</option>
-            <option value="daily">每天</option>
-            <option value="weekly">每周</option>
-            <option value="monthly">每月</option>
-          </select></label>
-        </div>
-        <div id="transferFields" class="form-grid hidden">
-          <label>转入账户<select id="toAccount"></select></label>
-        </div>
-        <button class="primary-btn" type="submit" id="saveRecord">保存账单</button>
-      </form>
+      <div class="quick-stats" id="quickStats"></div>
 
-      <div class="section-title space-top"><h2>最近账单</h2><button class="text-button" data-page="records">查看全部 ›</button></div>
+      <div class="section-head">
+        <h2>最近账单</h2>
+        <button class="link" data-go="records">全部明细 ›</button>
+      </div>
       <div id="recentRecords" class="record-list"></div>
+      <p class="muted small" style="text-align:center;padding:16px 0">点右下角「＋」记一笔</p>
     </section>
 
+    <!-- ============ 明细 ============ -->
     <section class="page" id="page-records">
-      <div class="section-title"><h2>账单明细</h2></div>
-      <div class="panel filters">
-        <input id="searchRecords" placeholder="搜索备注或分类">
+      <div class="section-head"><h2>账单明细</h2><button class="link" data-go="stats">看统计 ›</button></div>
+
+      <div class="card filters">
+        <div class="search-wrap">
+          <span class="ico">🔍</span>
+          <input id="searchRecords" type="search" placeholder="搜索分类、备注、账户" autocomplete="off">
+        </div>
+        <div class="seg-chips" id="filterTypeChips" style="margin-top:9px">
+          <button class="seg-chip active" data-ft="all">全部</button>
+          <button class="seg-chip" data-ft="expense">支出</button>
+          <button class="seg-chip" data-ft="income">收入</button>
+          <button class="seg-chip" data-ft="transfer">转账</button>
+        </div>
         <div class="filter-row">
-          <input id="filterMonth" type="month" aria-label="选择月份">
-          <select id="filterType"><option value="all">全部类型</option><option value="expense">支出</option><option value="income">收入</option><option value="transfer">转账</option></select>
-        </div>
-      </div>
-      <div id="allRecords" class="record-list"></div>
-      <div class="panel export-panel">
-        <div><strong>导出你的数据</strong><p class="muted small">CSV 可用 Excel/WPS 打开；JSON 用于完整备份。</p></div>
-        <div class="button-row">
-          <button class="secondary-btn" id="exportCsv">导出 CSV</button>
-          <button class="secondary-btn" id="exportExcel">导出 Excel</button>
-          <button class="secondary-btn" id="exportJson">备份 JSON</button>
-        </div>
-        <label class="secondary-btn import-btn">恢复 JSON 备份<input id="importJson" type="file" accept=".json,application/json" hidden></label>
-      </div>
-    </section>
-
-    <section class="page" id="page-stats">
-      <div class="section-title"><h2>月度统计</h2><input id="statsMonth" type="month" aria-label="统计月份"></div>
-      <div class="stats-grid">
-        <div class="stat-card"><span>总收入</span><strong class="income" id="statsIncome">¥0.00</strong></div>
-        <div class="stat-card"><span>总支出</span><strong class="expense" id="statsExpense">¥0.00</strong></div>
-        <div class="stat-card"><span>结余</span><strong id="statsBalance">¥0.00</strong></div>
-        <div class="stat-card"><span>记账笔数</span><strong id="statsCount">0</strong></div>
-      </div>
-      <div class="panel"><div class="section-title"><h3>支出分类</h3></div><div id="categoryStats" class="category-stats"></div></div>
-      <div class="panel"><div class="section-title"><h3>每日支出</h3></div><div id="dailyStats" class="daily-stats"></div></div>
-    </section>
-
-    <section class="page" id="page-budget">
-      <div class="section-title"><h2>预算管理</h2></div>
-      <div class="panel">
-        <p class="muted">设置每月支出上限，概览页会显示预算使用情况。</p>
-        <form id="budgetForm">
-          <label>每月预算（¥）<input id="budgetAmount" type="number" min="0" step="0.01" placeholder="例如 3000.00" required></label>
-          <button class="primary-btn" type="submit">保存预算</button>
-        </form>
-        <div class="budget-detail"><span>本月已支出</span><strong id="budgetSpent">¥0.00</strong></div>
-        <div class="budget-detail"><span>预算剩余</span><strong id="budgetRemaining">—</strong></div>
-      </div>
-    </section>
-
-    <section class="page" id="page-activities">
-      <div class="section-title">
-        <h2>活动费用</h2>
-        <button class="secondary-btn" id="exportActivities">导出活动 CSV</button>
-      </div>
-      <div class="panel">
-        <p class="muted small">记录活动费用，自动计算 AA。可勾选自动记入日常账单。</p>
-        <form id="activityForm" class="form-grid">
-          <label class="full-width">活动名称<input id="activityName" maxlength="40" placeholder="例如：周末聚餐" required></label>
-          <label>日期<input id="activityDate" type="date" required></label>
-          <label>总金额（¥）<input id="activityTotal" type="number" min="0.01" step="0.01" required></label>
-          <label>参与人数<input id="activityPeople" type="number" min="1" step="1" required></label>
-          <label>额外收取（总额 ¥）<input id="activityExtra" type="number" min="0" step="0.01" value="0"></label>
-          <label class="full-width">备注<input id="activityNote" maxlength="100" placeholder="选填"></label>
-          <div class="activity-calc full-width" id="activityCalc">
-            <div><span>每人 AA</span><strong id="activityPerPerson">¥0.00</strong></div>
-            <div><span>应收合计</span><strong id="activityDue">¥0.00</strong></div>
-            <div><span>含额外人均</span><strong id="activityPerWithExtra">¥0.00</strong></div>
+          <div class="month-nav">
+            <button type="button" id="recordsPrev" aria-label="上个月">‹</button>
+            <span id="recordsMonthLabel">本月</span>
+            <button type="button" id="recordsNext" aria-label="下个月">›</button>
           </div>
-          <label class="checkbox-label full-width">
-            <input type="checkbox" id="activityAutoRecord" checked>
-            <span>自动将应收合计记入日常账单（收入）</span>
-          </label>
-          <button class="primary-btn full-width" type="submit">添加活动记录</button>
+          <select id="filterAccount" aria-label="筛选账户"><option value="all">全部账户</option></select>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:7px">
+          <button class="link" id="recordsMonthAll" style="font-size:11px">显示全部月份</button>
+        </div>
+      </div>
+
+      <div class="result-bar" id="recordsSummary"></div>
+      <div id="allRecords" class="record-list"></div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-title">导出与备份<span class="hint">CSV 可用 Excel / WPS 打开</span></div>
+        <div class="btn-row">
+          <button class="btn ghost" id="exportCsv">导出 CSV</button>
+          <button class="btn ghost" id="exportExcel">导出 Excel</button>
+          <button class="btn ghost" id="exportJson">备份 JSON</button>
+        </div>
+        <label class="btn soft block" style="margin-top:9px">恢复 JSON 备份
+          <input id="importJson" type="file" accept=".json,application/json" hidden>
+        </label>
+      </div>
+    </section>
+
+    <!-- ============ 统计 ============ -->
+    <section class="page" id="page-stats">
+      <div class="section-head"><h2>统计</h2><span class="sub" id="statsPeriodHint"></span></div>
+
+      <div class="seg-chips" id="statsRangeChips">
+        <button class="seg-chip" data-range="week">本周</button>
+        <button class="seg-chip active" data-range="month">本月</button>
+        <button class="seg-chip" data-range="quarter">近3个月</button>
+        <button class="seg-chip" data-range="half">近半年</button>
+        <button class="seg-chip" data-range="custom">自定义</button>
+      </div>
+
+      <div class="range-bar">
+        <button type="button" id="statsPrev" aria-label="上一段" class="range-arrow">‹</button>
+        <span class="range-label" id="statsRangeLabel">—</span>
+        <button type="button" id="statsNext" aria-label="下一段" class="range-arrow">›</button>
+      </div>
+
+      <div class="range-custom hidden" id="statsCustomRow">
+        <input id="statsStart" type="date" aria-label="开始日期">
+        <span class="muted small">至</span>
+        <input id="statsEnd" type="date" aria-label="结束日期">
+      </div>
+
+      <div class="kpi-grid" id="statsCards"></div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">支出构成<span class="hint" id="donutHint"></span></div>
+        <div class="donut-wrap">
+          <div class="donut" id="donutRing" role="img" aria-label="支出构成环形图">
+            <div class="donut-hole"><span>区间支出</span><strong id="donutTotal">¥0</strong></div>
+          </div>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+        <div class="cat-rows" id="categoryStats"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">近 6 个月收支<span class="hint">点击柱子查看当月</span></div>
+        <div id="trendChart"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span id="dailyTitle">每日支出</span><span class="hint" id="dailyHintTop"></span></div>
+        <div id="dailyStats" class="daily"></div>
+        <div class="daily-hint" id="dailyHint"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span>支出日历</span><span class="hint" id="calHint"></span></div>
+        <div class="cal-dow" id="calDow"></div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend"><span>少</span><i class="lv1"></i><i class="lv2"></i><i class="lv3"></i><i class="lv4"></i><span>多</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">收入构成</div>
+        <div id="incomeStats"></div>
+      </div>
+    </section>
+
+    <!-- ============ 活动 ============ -->
+    <section class="page" id="page-activities">
+      <div class="section-head"><h2>活动费用 AA</h2><button class="link" id="exportActivities">导出 CSV</button></div>
+      <div class="mini-summary" id="activitySummary"></div>
+
+      <div class="card">
+        <div class="card-title">新增活动<span class="hint">自动计算人均</span></div>
+        <form id="activityForm" class="form-grid">
+          <label class="field full"><span>活动名称</span><input id="activityName" maxlength="40" placeholder="例如：周末聚餐" required></label>
+          <label class="field"><span>日期</span><input id="activityDate" type="date" required></label>
+          <label class="field"><span>总金额（¥）</span><input id="activityTotal" type="text" inputmode="decimal" placeholder="0.00" required></label>
+          <label class="field"><span>参与人数</span><input id="activityPeople" type="text" inputmode="numeric" placeholder="0" required></label>
+          <label class="field"><span>额外收取（总额）</span><input id="activityExtra" type="text" inputmode="decimal" value="0"></label>
+          <label class="field full"><span>备注（选填）</span><input id="activityNote" maxlength="100" placeholder="选填"></label>
+          <div class="field full" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--surface-2);border-radius:12px;padding:12px">
+            <div><span class="muted small">每人 AA</span><div style="font-size:15px;font-weight:800;color:var(--c-primary);margin-top:4px" id="activityPerPerson">¥0.00</div></div>
+            <div><span class="muted small">应收合计</span><div style="font-size:15px;font-weight:800;color:var(--c-primary);margin-top:4px" id="activityDue">¥0.00</div></div>
+            <div><span class="muted small">含额外人均</span><div style="font-size:15px;font-weight:800;color:var(--c-primary);margin-top:4px" id="activityPerWithExtra">¥0.00</div></div>
+          </div>
+          <label class="check-row full"><input type="checkbox" id="activityAutoRecord" checked><span>同时记一笔收入账单</span></label>
+          <button class="btn primary full" type="submit">添加活动</button>
         </form>
       </div>
+
+      <div class="section-head"><h2>活动记录</h2><span class="sub" id="activityCount"></span></div>
       <div id="activityList" class="record-list"></div>
     </section>
 
+    <!-- ============ 借还 ============ -->
     <section class="page" id="page-loans">
-      <div class="section-title"><h2>借款与还款</h2></div>
-      <div class="panel">
-        <p class="muted small">记录借出/借入及归还。可勾选自动生成日常收支。</p>
+      <div class="section-head"><h2>借款与还款</h2><span class="sub" id="loanCount"></span></div>
+      <div class="mini-summary" id="loanSummary"></div>
+
+      <div class="card">
+        <div class="card-title">记一笔借还</div>
         <form id="loanForm" class="form-grid">
-          <label>类型<select id="loanType"><option value="lent">借给别人</option><option value="borrowed">向别人借</option></select></label>
-          <label>姓名/对象<input id="loanPerson" maxlength="40" placeholder="例如：朋友" required></label>
-          <label>金额（¥）<input id="loanAmount" type="number" min="0.01" step="0.01" required></label>
-          <label>日期<input id="loanDate" type="date" required></label>
-          <label class="full-width">备注<input id="loanNote" maxlength="100" placeholder="可不填"></label>
-          <label class="checkbox-label full-width">
-            <input type="checkbox" id="loanAutoRecord" checked>
-            <span>自动生成对应的日常收支账单</span>
-          </label>
-          <button class="primary-btn full-width" type="submit">添加借还记录</button>
+          <label class="field"><span>类型</span><select id="loanType"><option value="lent">借给别人</option><option value="borrowed">向别人借</option></select></label>
+          <label class="field"><span>对象</span><input id="loanPerson" maxlength="40" placeholder="例如：小王" required></label>
+          <label class="field"><span>金额（¥）</span><input id="loanAmount" type="text" inputmode="decimal" placeholder="0.00" required></label>
+          <label class="field"><span>日期</span><input id="loanDate" type="date" required></label>
+          <label class="field full"><span>备注（选填）</span><input id="loanNote" maxlength="100" placeholder="可不填"></label>
+          <label class="check-row full"><input type="checkbox" id="loanAutoRecord" checked><span>同时记一笔支出 / 收入账单</span></label>
+          <button class="btn primary full" type="submit">添加借还记录</button>
         </form>
       </div>
+
+      <div class="section-head"><h2>借还记录</h2></div>
       <div id="loanList" class="record-list"></div>
     </section>
 
+    <!-- ============ 预算 ============ -->
+    <section class="page" id="page-budget">
+      <div class="section-head">
+        <h2>预算管理</h2>
+        <div class="month-nav">
+          <button type="button" id="budgetPrev" aria-label="上个月">‹</button>
+          <span id="budgetMonthLabel">本月</span>
+          <button type="button" id="budgetNext" aria-label="下个月">›</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="budget-big">
+          <div>
+            <div class="lab">本月已支出</div>
+            <div class="num" id="budgetSpent">¥0.00</div>
+          </div>
+          <div style="text-align:right">
+            <div class="lab">预算</div>
+            <div style="font-size:16px;font-weight:760" id="budgetTotalText">未设置</div>
+          </div>
+        </div>
+        <div class="budget-bar-lg" id="budgetBarLg"><i id="budgetBarLgFill"></i></div>
+        <div class="budget-facts">
+          <div><span>剩余</span><strong id="budgetRemaining">—</strong></div>
+          <div><span>日均可用</span><strong id="budgetDaily">—</strong></div>
+          <div><span>已用比例</span><strong id="budgetPercent">—</strong></div>
+        </div>
+        <form id="budgetForm" class="btn-row" style="margin-top:14px">
+          <input id="budgetAmount" type="text" inputmode="decimal" placeholder="输入本月预算" style="flex:1">
+          <button class="btn primary" type="submit" style="width:auto;min-height:44px;padding:0 20px;font-size:13px">保存</button>
+        </form>
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn ghost" id="copyBudgetBtn">沿用上月预算</button>
+          <button class="btn ghost" id="btnCatBudget2">分类预算</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">分类预算<span class="hint">超过会标红</span></div>
+        <div id="catBudgetList"></div>
+        <button class="btn ghost block" id="btnCatBudget" style="margin-top:12px">设置分类预算</button>
+      </div>
+    </section>
+
+    <!-- ============ 设置 ============ -->
     <section class="page" id="page-settings">
-      <div class="section-title"><h2>设置与数据</h2></div>
+      <div class="section-head"><h2>设置</h2><span class="sub">v2.0</span></div>
 
-      <div class="panel">
-        <h3>主题颜色</h3>
-        <p class="muted small">选择喜欢的页面主色调，或用下方 360° 色盘自定义任意颜色。</p>
-        <div class="theme-colors" id="themeColors">
-          <button type="button" data-color="blue" class="theme-btn active" style="background:#3b6fdc"></button>
-          <button type="button" data-color="green" class="theme-btn" style="background:#10b981"></button>
-          <button type="button" data-color="purple" class="theme-btn" style="background:#8b5cf6"></button>
-          <button type="button" data-color="orange" class="theme-btn" style="background:#f97316"></button>
-          <button type="button" data-color="pink" class="theme-btn" style="background:#ec4899"></button>
-          <button type="button" data-color="red" class="theme-btn" style="background:#ef4444"></button>
-          <button type="button" data-color="teal" class="theme-btn" style="background:#14b8a6"></button>
-          <button type="button" data-color="indigo" class="theme-btn" style="background:#6366f1"></button>
-          <button type="button" data-color="amber" class="theme-btn" style="background:#f59e0b"></button>
-          <button type="button" data-color="dark" class="theme-btn" style="background:#334155"></button>
+      <div class="group-title">外观</div>
+      <div class="card settings-card">
+        <div class="seg" id="modeSeg">
+          <button type="button" data-mode="light">浅色</button>
+          <button type="button" data-mode="dark">深色</button>
+          <button type="button" data-mode="auto">跟随系统</button>
         </div>
-        <label class="color-picker">
-          <span>🎨 360° 自定义主题色</span>
-          <span class="color-wheel-wrap">
-            <span class="color-wheel"></span>
-            <span class="color-wheel-center" id="themeWheelCenter"></span>
-            <input type="color" id="customThemePicker" value="#4a7ce0" aria-label="自定义主题色">
-          </span>
-        </label>
-      </div>
-
-      <div class="panel">
-        <h3>字体样式</h3>
-        <p class="muted small">改变整个页面的字体风格（共 24 种）。</p>
-        <select id="fontFamilySelect" style="margin-top:10px;"></select>
-      </div>
-
-      <div class="panel">
-        <h3>字体颜色</h3>
-        <p class="muted small">改变页面主要文字颜色，或用 360° 色盘自定义。</p>
-        <div class="text-colors" id="textColors">
-          <button type="button" data-text="default" class="theme-btn active" style="background:#1d2738"></button>
-          <button type="button" data-text="black" class="theme-btn" style="background:#000000"></button>
-          <button type="button" data-text="gray" class="theme-btn" style="background:#4b5563"></button>
-          <button type="button" data-text="brown" class="theme-btn" style="background:#5c4033"></button>
-          <button type="button" data-text="blue" class="theme-btn" style="background:#1e3a8a"></button>
+        <div class="field-label" style="margin-top:16px">主题色</div>
+        <div class="swatches" id="themeSwatches"></div>
+        <div class="color-line">
+          <span>自定义主题色</span>
+          <span class="color-dot-wrap"><span class="color-wheel"></span><span class="color-wheel-center" id="themeWheelCenter"></span><input type="color" id="themePicker" value="#3b6fe8" aria-label="自定义主题色"></span>
         </div>
-        <label class="color-picker">
-          <span>🎨 360° 自定义文字颜色</span>
-          <span class="color-wheel-wrap">
-            <span class="color-wheel"></span>
-            <span class="color-wheel-center" id="textWheelCenter"></span>
-            <input type="color" id="customTextPicker" value="#1d2738" aria-label="自定义文字颜色">
-          </span>
-        </label>
-      </div>
-
-      <div class="panel">
-        <h3>账户管理</h3>
-        <p class="muted small">自定义你的资金来源账户（如各平台钱包、银行卡等）。</p>
-        <button class="secondary-btn" id="manageAccountsBtn" style="width:100%">管理账户</button>
-      </div>
-
-      <div class="panel">
-        <h3>分类管理</h3>
-        <p class="muted small">自定义你的收支分类和图标，内置几百种图标可选。</p>
-        <button class="secondary-btn" id="manageCatsBtn" style="width:100%">管理分类</button>
-      </div>
-
-      <div class="panel">
-        <h3>应用锁与备份</h3>
-        <p class="muted small">数据保存在本地，为了隐私可开启密码锁。</p>
-        <div class="button-row">
-          <button class="secondary-btn" id="setPinBtn">设置/修改密码锁</button>
-          <button class="secondary-btn" id="removePinBtn">关闭密码锁</button>
+        <div class="setting-line">
+          <span>字体</span>
+          <select id="fontSelect" aria-label="字体"></select>
         </div>
-        <button class="secondary-btn" id="restoreBackupBtn" style="width:100%;margin-top:10px">恢复上一次历史版本</button>
+        <div class="field-label" style="margin-top:14px">文字颜色</div>
+        <div class="swatches" id="inkSwatches"></div>
+        <div class="color-line">
+          <span>自定义文字颜色</span>
+          <span class="color-dot-wrap"><span class="color-wheel"></span><span class="color-wheel-center" id="inkWheelCenter"></span><input type="color" id="inkPicker" value="#0e1524" aria-label="自定义文字颜色"></span>
+        </div>
+        <div class="switch-row" style="border-top:1px dashed var(--line);margin-top:6px">
+          <div><div>隐藏金额</div><div class="desc">打开后金额会模糊显示，适合在公共场合查看</div></div>
+          <button type="button" class="switch" id="hideSwitch" aria-label="隐藏金额"></button>
+        </div>
+        <div class="switch-row">
+          <div><div>纯黑背景（深色模式）</div><div class="desc">深色模式下用纯黑底，OLED 屏更省电</div></div>
+          <button type="button" class="switch" id="oledSwitch" aria-label="纯黑背景"></button>
+        </div>
       </div>
 
-      <div class="panel">
-        <h3>数据备份</h3>
-        <p class="muted small">换设备前请先导出 JSON 备份。</p>
-        <button class="secondary-btn" id="settingsExport" style="width:100%">立即备份 JSON</button>
+      <div class="card settings-card">
+        <div class="card-title">背景<span class="hint">跟主题色联动</span></div>
+        <div class="bg-grid" id="bgSwatches"></div>
       </div>
 
-      <div class="panel danger-panel">
-        <h3>清空账本</h3><p class="muted">此操作将清除所有数据，无法撤销。</p>
-        <button class="danger-btn" id="clearAll">清空全部数据</button>
+      <div class="group-title">记账</div>
+      <div class="card settings-card">
+        <div class="setting-line">
+          <span>默认账户<div class="desc">快捷收款、自动记账会用它</div></span>
+          <select id="defaultAccount" aria-label="默认账户"></select>
+        </div>
+        <div class="btn-row" style="margin-top:6px">
+          <button class="btn ghost" id="btnRecurring">周期记账</button>
+          <button class="btn ghost" id="btnCatBudget3">分类预算</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn ghost" id="btnAccounts">账户管理</button>
+          <button class="btn ghost" id="btnCats">分类管理</button>
+        </div>
+        <button class="btn ghost block" id="btnAssets" style="margin-top:9px">资产总览</button>
+      </div>
+
+      <div class="group-title">安全</div>
+      <div class="card settings-card">
+        <div class="switch-row">
+          <div><div>密码锁</div><div class="desc">打开应用时需输入 4 位密码</div></div>
+          <button type="button" class="switch" id="pinSwitch" aria-label="密码锁"></button>
+        </div>
+        <div class="setting-line">
+          <span>离开后自动锁定</span>
+          <select id="autoLockSelect">
+            <option value="0">不自动锁</option>
+            <option value="1">1 分钟</option>
+            <option value="3">3 分钟</option>
+            <option value="5">5 分钟</option>
+            <option value="15">15 分钟</option>
+            <option value="30">30 分钟</option>
+          </select>
+        </div>
+        <button class="btn ghost block" id="btnChangePin" style="margin-top:8px">修改密码</button>
+      </div>
+
+      <div class="group-title">数据</div>
+      <div class="card settings-card">
+        <div class="btn-row">
+          <button class="btn ghost" id="btnExportCsv">CSV</button>
+          <button class="btn ghost" id="btnExportExcel">Excel</button>
+          <button class="btn ghost" id="btnExportJson">JSON 备份</button>
+        </div>
+        <div class="btn-row" style="margin-top:9px">
+          <label class="btn soft">导入备份<input id="importJson2" type="file" accept=".json,application/json" hidden></label>
+          <button class="btn ghost" id="btnSnapshots">历史快照</button>
+        </div>
+        <div class="storage-bar"><i id="storageBar"></i></div>
+        <div class="muted small" id="storageInfo">—</div>
+      </div>
+
+      <div class="card settings-card danger-zone">
+        <div class="card-title">清空账本</div>
+        <p class="muted small" style="margin-bottom:12px">将删除全部账单、预算、活动与借还记录，无法撤销。建议先导出 JSON 备份。</p>
+        <button class="btn danger block" id="clearAll">清空全部数据</button>
+      </div>
+
+      <div class="card settings-card">
+        <div class="card-title">关于</div>
+        <p class="muted small" style="line-height:1.7">
+          我的账本 v2.0 · 纯前端单页应用<br>
+          数据保存在浏览器 localStorage，不上传服务器<br>
+          换设备或换浏览器前请先导出 JSON，再在新设备导入
+        </p>
       </div>
     </section>
   </main>
-  <footer>我的账本 · 轻量、私密、好上手</footer>
+
+  <footer>我的账本 · 轻量、私密、离线可用</footer>
 </div>
 
-<!-- 账单操作菜单 -->
-<dialog id="actionDialog" class="app-dialog action-dialog">
-  <div class="action-menu">
-    <button type="button" class="action-btn" id="actionEdit">编辑账单</button>
-    <button type="button" class="action-btn danger" id="actionDelete">删除账单</button>
-    <button type="button" class="action-btn cancel" onclick="document.getElementById('actionDialog').close()">取消</button>
-  </div>
-</dialog>
+<button class="fab" id="fabBtn" aria-label="记一笔">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+</button>
 
-<dialog id="editDialog" class="app-dialog">
-  <form method="dialog" id="editForm">
-    <h3>编辑账单</h3>
-    <input type="hidden" id="editId">
-    <div class="form-grid">
-      <label>金额<input type="number" id="editAmount" step="0.01" required></label>
-      <label>分类<select id="editCategory"></select></label>
-      <label>账户<select id="editAccount"></select></label>
-      <label>日期<input type="date" id="editDate" required></label>
-      <label class="full-width">备注<input type="text" id="editNote"></label>
-    </div>
-    <div class="dialog-actions">
-      <button type="button" class="secondary-btn" onclick="document.getElementById('editDialog').close()">取消</button>
-      <button type="submit" class="primary-btn" style="margin-top:0">保存修改</button>
-    </div>
-  </form>
-</dialog>
-
-<!-- 账户管理弹窗 -->
-<dialog id="accountDialog" class="app-dialog">
-  <div id="accountManageContent">
-    <h3>账户管理</h3>
-    <div id="accountList" class="cat-manage-list"></div>
-    <div class="form-grid" style="margin-top:10px; background:#f8fafc; padding:10px; border-radius:12px">
-      <label class="full-width">新账户名称<input type="text" id="newAccountName" placeholder="例如：招商银行卡" maxlength="10"></label>
-      <button type="button" class="secondary-btn full-width" id="addAccountBtn">添加账户</button>
-    </div>
-    <div class="dialog-actions" style="margin-top:15px">
-      <button type="button" class="primary-btn" onclick="document.getElementById('accountDialog').close()">完成</button>
-    </div>
-  </div>
-</dialog>
-
-<!-- 分类管理弹窗 -->
-<dialog id="catDialog" class="app-dialog">
-  <div id="catManageContent">
-    <h3>分类管理</h3>
-    <div class="type-switch" style="margin-bottom:10px">
-      <button type="button" class="type-btn active" data-cattype="expense">支出</button>
-      <button type="button" class="type-btn" data-cattype="income">收入</button>
-    </div>
-    <div id="catList" class="cat-manage-list"></div>
-    
-    <div class="form-grid" style="margin-top:10px; background:#f8fafc; padding:10px; border-radius:12px">
-      <label>名称<input type="text" id="newCatName" placeholder="例如：宠物" maxlength="10"></label>
-      <label>图标<input type="text" id="newCatIcon" placeholder="点击或手填" maxlength="4"></label>
-      <!-- 图标选择面板 -->
-      <div class="full-width emoji-picker-container">
-        <div class="emoji-tabs">
-          <span class="emoji-tab active" data-etype="food">吃喝</span>
-          <span class="emoji-tab" data-etype="traffic">出行</span>
-          <span class="emoji-tab" data-etype="shopping">购物</span>
-          <span class="emoji-tab" data-etype="life">生活</span>
-          <span class="emoji-tab" data-etype="fun">娱乐</span>
-          <span class="emoji-tab" data-etype="work">工作</span>
-          <span class="emoji-tab" data-etype="other">其他</span>
-        </div>
-        <div class="emoji-grid" id="emojiGrid"></div>
+<!-- ============ 记账面板 ============ -->
+<div class="overlay" id="entryOverlay" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="记一笔">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <button type="button" class="sheet-cancel" id="entryCancel">取消</button>
+      <div class="seg" id="entryTypeSwitch">
+        <button type="button" data-type="expense" class="active">支出</button>
+        <button type="button" data-type="income">收入</button>
+        <button type="button" data-type="transfer">转账</button>
       </div>
-      <button type="button" class="secondary-btn full-width" id="addCatBtn">添加分类</button>
+      <span class="sheet-title" id="entryTitle">记一笔</span>
     </div>
-    <div class="dialog-actions" style="margin-top:15px">
-      <button type="button" class="primary-btn" onclick="document.getElementById('catDialog').close()">完成</button>
-    </div>
-  </div>
-</dialog>
 
-<div id="customKeypad" class="custom-keypad hidden">
-  <div class="keypad-header">
-    <span id="keypadExpr">0</span>
-    <button type="button" class="keypad-done" id="keypadDone">完成</button>
-  </div>
-  <div class="keypad-grid">
-    <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button><button type="button" data-k="del" class="key-del">⌫</button>
-    <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button><button type="button" data-k="+" class="key-op">+</button>
-    <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button><button type="button" data-k="-" class="key-op">-</button>
-    <button type="button" data-k=".">.</button><button type="button" data-k="0">0</button><button type="button" data-k="=" class="key-eq">=</button><button type="button" data-k="*" class="key-op">×</button>
-    <button type="button" data-k="clear" class="key-clear" style="grid-column: span 2;">清空</button>
-    <button type="button" data-k="/" class="key-op" style="grid-column: span 2;">÷</button>
+    <div class="entry-step" id="entryStepAmount">
+      <div class="amount-display" id="entryAmountDisplay">0.00</div>
+      <div class="amount-meta">
+        <span id="entryAmountHint">输入金额，可做加减乘除</span>
+        <span class="muted" id="entryAmountPreview"></span>
+      </div>
+      <div class="keypad" id="entryKeypad">
+        <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button><button type="button" data-k="del" class="k-fn">⌫</button>
+        <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button><button type="button" data-k="+" class="k-op">＋</button>
+        <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button><button type="button" data-k="-" class="k-op">－</button>
+        <button type="button" data-k=".">.</button><button type="button" data-k="0">0</button><button type="button" data-k="*" class="k-op">×</button><button type="button" data-k="/" class="k-op">÷</button>
+        <button type="button" data-k="clear" class="k-fn span2">清空</button><button type="button" data-k="=" class="k-eq span2">=</button>
+      </div>
+      <button type="button" class="btn primary entry-next" id="entryNextBtn">下一步</button>
+    </div>
+
+    <div class="entry-step hidden" id="entryStepDetail">
+      <div class="entry-amount-row">
+        <button type="button" class="link" id="entryBack">‹ 改金额</button>
+        <div class="entry-amount-small" id="entryAmountSmall">¥0.00<small id="entryTypeHint">支出</small></div>
+      </div>
+      <div class="entry-body">
+        <div class="field-label" id="entryCatLabel">分类<button type="button" class="link" id="entryManageCats">管理分类</button></div>
+        <div class="cat-grid" id="entryCatGrid"></div>
+
+        <div class="field-label" id="entryAccountLabel">账户</div>
+        <div class="chip-row" id="entryAccountChips"></div>
+
+        <div id="entryTransferBox" class="hidden">
+          <div class="field-label">转入账户</div>
+          <div class="chip-row" id="entryToAccountChips"></div>
+        </div>
+
+        <div class="field-label">日期</div>
+        <div class="chip-row" id="entryDateChips"></div>
+        <div class="hidden" id="entryDatePickerRow" style="margin-top:8px"><input type="date" id="entryDate"></div>
+
+        <div class="field-label">备注</div>
+        <input type="text" class="text-input" id="entryNote" maxlength="60" placeholder="写点什么（选填）" autocomplete="off">
+        <div class="chip-row" id="entryNoteChips" style="margin-top:8px"></div>
+
+        <div class="field-label">重复</div>
+        <div class="chip-row" id="entryFreqChips">
+          <button type="button" class="chip active" data-freq="none">不重复</button>
+          <button type="button" class="chip" data-freq="daily">每天</button>
+          <button type="button" class="chip" data-freq="weekly">每周</button>
+          <button type="button" class="chip" data-freq="monthly">每月</button>
+        </div>
+        <div style="height:6px"></div>
+      </div>
+      <button type="button" class="btn primary entry-save" id="entrySave">保存</button>
+    </div>
   </div>
 </div>
 
-<dialog id="quickDialog" class="app-dialog">
-  <form method="dialog" id="quickForm">
-    <h3 id="quickTitle">快捷还款</h3>
-    <input type="hidden" id="quickMode">
-    <input type="hidden" id="quickId">
-    <div class="form-grid">
-      <label>本次金额（¥）<input type="number" id="quickAmount" step="0.01" min="0.01" required></label>
-      <label>日期<input type="date" id="quickDate" required></label>
+<!-- ============ 操作菜单 ============ -->
+<div class="overlay" id="actionOverlay" aria-hidden="true">
+  <div class="action-sheet">
+    <div class="action-group">
+      <p class="action-title" id="actionTitle">操作</p>
+      <div id="actionButtons"></div>
     </div>
-    <div class="quick-amounts" id="quickAmounts"></div>
-    <label class="checkbox-label full-width" style="margin-top:14px">
-      <input type="checkbox" id="quickAutoRecord">
-      <span id="quickAutoLabel">同时记一笔账单</span>
-    </label>
-    <div class="dialog-actions">
-      <button type="button" class="secondary-btn" onclick="document.getElementById('quickDialog').close()">取消</button>
-      <button type="submit" class="primary-btn" style="margin-top:0">确认</button>
-    </div>
-  </form>
-</dialog>
+    <button type="button" class="action-cancel" data-close>取消</button>
+  </div>
+</div>
 
-<div id="toast" class="toast" role="status"></div>
-<!-- 强制刷新缓存 v=11 -->
-<script src="app.js?v=11"></script>
+<!-- ============ 收款 / 还款 ============ -->
+<div class="overlay center" id="quickOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3 id="quickTitle">登记还款</h3>
+    <p class="sub" id="quickSub"></p>
+    <div class="form-grid">
+      <label class="field"><span>本次金额（¥）</span><input id="quickAmount" type="text" inputmode="decimal" placeholder="0.00"></label>
+      <label class="field"><span>日期</span><input id="quickDate" type="date"></label>
+    </div>
+    <div class="chip-row" id="quickChips" style="margin-top:10px"></div>
+    <label class="check-row" style="margin-top:14px"><input type="checkbox" id="quickAutoRecord"><span id="quickAutoLabel">同时记一笔账单</span></label>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" data-close>取消</button>
+      <button type="button" class="btn primary" id="quickSave" style="width:auto">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 借还编辑 ============ -->
+<div class="overlay center" id="loanOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3 id="loanTitle">编辑借还</h3>
+    <p class="sub">修改后不会自动改动已生成的账单</p>
+    <div class="form-grid">
+      <label class="field"><span>类型</span><select id="loanEditType"><option value="lent">借给别人</option><option value="borrowed">向别人借</option></select></label>
+      <label class="field"><span>对象</span><input id="loanEditPerson" maxlength="40"></label>
+      <label class="field"><span>金额（¥）</span><input id="loanEditAmount" type="text" inputmode="decimal"></label>
+      <label class="field"><span>日期</span><input id="loanEditDate" type="date"></label>
+      <label class="field full"><span>备注</span><input id="loanEditNote" maxlength="100"></label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" data-close>取消</button>
+      <button type="button" class="btn primary" id="loanSave" style="width:auto">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 活动编辑 ============ -->
+<div class="overlay center" id="actOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3 id="actTitle">编辑活动</h3>
+    <p class="sub">修改金额或人数后，人均与应收会重新计算</p>
+    <div class="form-grid">
+      <label class="field full"><span>活动名称</span><input id="actEditName" maxlength="40"></label>
+      <label class="field"><span>日期</span><input id="actEditDate" type="date"></label>
+      <label class="field"><span>总金额（¥）</span><input id="actEditTotal" type="text" inputmode="decimal"></label>
+      <label class="field"><span>参与人数</span><input id="actEditPeople" type="text" inputmode="numeric"></label>
+      <label class="field"><span>额外收取</span><input id="actEditExtra" type="text" inputmode="decimal"></label>
+      <label class="field full"><span>备注</span><input id="actEditNote" maxlength="100"></label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" data-close>取消</button>
+      <button type="button" class="btn primary" id="actSave" style="width:auto">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 账户管理 ============ -->
+<div class="overlay center" id="accountOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3>账户管理</h3>
+    <p class="sub">账户余额 = 初始余额 + 收入 − 支出 ± 转账</p>
+    <div class="manage-list" id="accountList"></div>
+    <div class="add-box">
+      <div class="form-grid">
+        <label class="field"><span>新账户名称</span><input id="newAccountName" maxlength="10" placeholder="例如：招商银行"></label>
+        <label class="field"><span>初始余额</span><input id="newAccountInitial" type="text" inputmode="decimal" placeholder="0"></label>
+      </div>
+      <button class="btn soft block" id="addAccountBtn" style="margin-top:10px">添加账户</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn primary" data-close>完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 分类管理 ============ -->
+<div class="overlay center" id="catOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3>分类管理</h3>
+    <p class="sub">删除分类不会删除已有账单</p>
+    <div class="seg" id="catTypeSeg" style="margin-bottom:12px">
+      <button type="button" data-cattype="expense" class="active">支出</button>
+      <button type="button" data-cattype="income">收入</button>
+    </div>
+    <div class="manage-list" id="catList"></div>
+    <div class="add-box">
+      <div class="form-grid">
+        <label class="field"><span>分类名称</span><input id="newCatName" maxlength="10" placeholder="例如：宠物"></label>
+        <label class="field"><span>图标</span><input id="newCatIcon" maxlength="4" placeholder="点下方选"></label>
+      </div>
+      <div class="emoji-tabs" id="emojiTabs" style="margin-top:10px">
+        <span class="emoji-tab active" data-etype="food">吃喝</span>
+        <span class="emoji-tab" data-etype="traffic">出行</span>
+        <span class="emoji-tab" data-etype="shopping">购物</span>
+        <span class="emoji-tab" data-etype="life">生活</span>
+        <span class="emoji-tab" data-etype="fun">娱乐</span>
+        <span class="emoji-tab" data-etype="work">工作</span>
+        <span class="emoji-tab" data-etype="other">其他</span>
+      </div>
+      <div class="emoji-grid" id="emojiGrid"></div>
+      <button class="btn soft block" id="addCatBtn" style="margin-top:10px">添加分类</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn primary" data-close>完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 资产 ============ -->
+<div class="overlay center" id="assetsOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3>资产总览</h3>
+    <p class="sub" id="assetsSub">按账户统计当前余额</p>
+    <div class="mini-summary" id="assetsSummary"></div>
+    <div class="manage-list" id="assetsList"></div>
+    <div class="assets-net" id="assetsNet"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" id="assetsManage">管理账户</button>
+      <button type="button" class="btn primary" data-close style="width:auto">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 周期记账 ============ -->
+<div class="overlay center" id="recurringOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3>周期记账</h3>
+    <p class="sub">到期的规则会自动生成账单，可随时暂停</p>
+    <div class="manage-list" id="recurringList"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn primary" data-close>完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 分类预算 ============ -->
+<div class="overlay center" id="catBudgetOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3>分类预算</h3>
+    <p class="sub" id="catBudgetSub">给常用分类设置每月上限，留空表示不限制</p>
+    <div id="catBudgetForm"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" data-close>取消</button>
+      <button type="button" class="btn primary" id="catBudgetSave" style="width:auto">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 历史快照 ============ -->
+<div class="overlay center" id="snapshotOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3>历史快照</h3>
+    <p class="sub">每次重要操作前会自动留存一份，最多 5 份</p>
+    <div class="manage-list" id="snapshotList"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn primary" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 某日账单 ============ -->
+<div class="overlay center" id="dayOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3 id="dayTitle">某日</h3>
+    <p class="sub" id="daySub"></p>
+    <div class="manage-list" id="dayList"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn primary" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 设置密码 ============ -->
+<div class="overlay center" id="pinOverlay" aria-hidden="true">
+  <div class="modal">
+    <h3 id="pinTitle">设置密码</h3>
+    <p class="sub">4 位数字，用于打开账本时验证</p>
+    <input id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="text-align:center;font-size:26px;letter-spacing:12px">
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" data-close>取消</button>
+      <button type="button" class="btn primary" id="pinSave" style="width:auto">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="app.js?v=23"></script>
 </body>
 </html>

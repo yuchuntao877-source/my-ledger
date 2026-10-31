@@ -1,11 +1,19 @@
 {
   "name": "我的账本",
   "short_name": "我的账本",
-  "description": "轻量、私密的个人记账工具，支持自定义分类、周期记账、密码锁与活动AA",
+  "description": "轻量、私密的个人记账工具：收支/转账、预算与分类预算、活动AA、借还、周期记账、深色模式，数据只存在本机。",
   "start_url": "./",
   "scope": "./",
+  "id": "./",
   "display": "standalone",
-  "background_color": "#f4f7fb",
-  "theme_color": "#4a7ce0",
-  "lang": "zh-CN"
+  "orientation": "portrait",
+  "background_color": "#f3f5fa",
+  "theme_color": "#3b6fe8",
+  "lang": "zh-CN",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
 }
